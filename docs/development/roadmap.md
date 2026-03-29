@@ -73,14 +73,33 @@ Vanaspati does NOT own:
 
 ## Future
 
-> Not scheduled — demand-gated
+> Not scheduled — demand-gated. Prioritized by domain research (P(-1) audit, 2026-03-29).
 
-- [ ] C4/CAM photosynthesis pathways
-- [ ] Southern hemisphere season mapping
-- [ ] Seed dispersal mechanics (wind, animal, water vectors)
+### High Priority (biggest realism gains)
+
+- [ ] **Water/soil moisture system** — precipitation, soil water storage, root uptake, drought stress on growth/photosynthesis. Single biggest missing piece — water is the primary limiting factor for plant growth in most terrestrial ecosystems
+- [ ] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
+- [ ] **Seed dispersal** — wind, animal, gravity, ballistic dispersal with distance kernels. Required for spatial vegetation dynamics
+- [ ] **Mortality and disturbance** — drought, competition-driven (self-thinning / Yoda's -3/2 power law), fire, disease, windthrow, age-related
+- [ ] **Phenology (growing degree days)** — replace/augment rigid season boundaries with accumulated heat + photoperiod triggers + chilling requirements
+
+### Medium Priority
+
+- [ ] **Biomass allocation** — carbon partitioning between roots, stems, leaves, reproductive organs. Allometric model (height → diameter, leaf area, root mass)
+- [ ] **Light competition / canopy structure** — Beer-Lambert canopy extinction (`I = I0 × e^(-k × LAI)`) for multi-plant shading
+- [ ] C4/CAM photosynthesis pathways — different temperature optima, water-use efficiencies
+- [ ] Southern hemisphere / latitude-parameterized seasons
+- [ ] **Decomposition and litter** — exponential decay with temperature/moisture dependence, nutrient cycling
+- [ ] **Stomatal conductance** — Ball-Berry model coupling photosynthesis, water loss, and temperature
+
+### Lower Priority
+
 - [ ] Mycorrhizal network (plant-fungal nutrient exchange)
 - [ ] Allelopathy (chemical competition between plants)
 - [ ] Fire ecology (fire-adapted species, post-fire regeneration)
+- [ ] **Herbivory pressure** — grazing/browsing biomass removal
+- [ ] **Vegetative reproduction** — runners, rhizomes, root sprouting (clonal spread)
+- [ ] **Succession dynamics** — pioneer vs. climax species, shade tolerance, lifespan classes
 
 ---
 

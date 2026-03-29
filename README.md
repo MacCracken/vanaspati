@@ -36,18 +36,18 @@ vanaspati = "0.1"
 ```
 
 ```rust
-use vanaspati::{GrowthModel, GrowthStage, Season, photosynthesis_rate};
+use vanaspati::{GrowthModel, Season, photosynthesis_rate};
 
 // Grow an oak tree
 let oak = GrowthModel::oak();
-let height = oak.height_at_day(365);
-let daily = oak.daily_growth(100);
+let height = oak.height_at_day(365.0);    // meters after 1 year
+let daily = oak.daily_growth(5.0);        // meters/day at 5m tall
 
-// Photosynthesis under full sun
-let rate = photosynthesis_rate(12.0, 800.0);
+// Photosynthesis: Pmax=20 µmol CO₂/m²/s, α=0.05, PAR=800 µmol/m²/s
+let rate = photosynthesis_rate(20.0, 0.05, 800.0);
 
 // Seasonal growth modifier
-let modifier = Season::Summer.growth_modifier();
+let modifier = Season::Summer.growth_modifier(); // 1.0
 ```
 
 ### Optional Features
