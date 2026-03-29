@@ -20,6 +20,24 @@
 //! | [`mortality`] | Age, drought, frost, competition mortality models |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
 //! | [`error`] | Error types |
+//!
+//! ## Quick Start
+//!
+//! ```
+//! use vanaspati::{GrowthModel, Season, photosynthesis_rate, growth_stage, daylight_hours_at};
+//!
+//! // Grow an oak for a year
+//! let oak = GrowthModel::oak();
+//! let height = oak.height_at_day(365.0);
+//! let stage = growth_stage(height, oak.max_height);
+//!
+//! // Photosynthesis under full sun
+//! let rate = photosynthesis_rate(20.0, 0.05, 800.0);
+//!
+//! // Latitude-aware daylight
+//! let hours = daylight_hours_at(172, 45.0); // summer solstice, 45°N
+//! assert!(hours > 15.0);
+//! ```
 
 pub mod biomass;
 pub mod dispersal;
@@ -39,7 +57,7 @@ pub mod logging;
 pub use error::{Result, VanaspatiError};
 
 // Growth
-pub use growth::{GrowthModel, GrowthStage};
+pub use growth::{GrowthModel, GrowthStage, growth_stage};
 
 // Photosynthesis
 pub use photosynthesis::{

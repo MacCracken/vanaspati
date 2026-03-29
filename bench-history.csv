@@ -128,3 +128,73 @@ test shannon_diversity_20sp ... bench:          65 ns/iter (+/- 0)
 
 test net_primary_productivity ... bench:           2 ns/iter (+/- 0)
 
+test growth_oak_height_at_day ... bench:           5 ns/iter (+/- 1)
+
+test growth_bamboo_height_at_day ... bench:           5 ns/iter (+/- 1)
+
+test growth_oak_daily_growth ... bench:           2 ns/iter (+/- 0)
+
+test growth_stage ... bench:           3 ns/iter (+/- 0)
+
+test photosynthesis_rate ... bench:           5 ns/iter (+/- 0)
+
+test temperature_factor ... bench:           5 ns/iter (+/- 0)
+
+test temperature_factor_c4 ... bench:           4 ns/iter (+/- 0)
+
+test temperature_factor_cam ... bench:           4 ns/iter (+/- 0)
+
+test pathway_params ... bench:           8 ns/iter (+/- 0)
+
+test season_from_day ... bench:           2 ns/iter (+/- 0)
+
+test season_growth_modifier ... bench:           0 ns/iter (+/- 0)
+
+test season_daylight_hours ... bench:           0 ns/iter (+/- 0)
+
+test daylight_hours_at_45n ... bench:          36 ns/iter (+/- 8)
+
+test daylight_hours_at_equator ... bench:          26 ns/iter (+/- 5)
+
+test growth_modifier_at_45n ... bench:          35 ns/iter (+/- 1)
+
+test from_day_latitude_south ... bench:           3 ns/iter (+/- 0)
+
+test root_stabilization_factor ... bench:           1 ns/iter (+/- 0)
+
+test pollination_probability_insect ... bench:           2 ns/iter (+/- 0)
+
+test pollination_probability_self ... bench:           2 ns/iter (+/- 0)
+
+test dispersal_distance_wind ... bench:          10 ns/iter (+/- 0)
+
+test dispersal_distance_gravity ... bench:           2 ns/iter (+/- 0)
+
+test dispersal_probability_wind ... bench:           4 ns/iter (+/- 0)
+
+test dispersal_probability_animal ... bench:           4 ns/iter (+/- 0)
+
+test allocate_balanced ... bench:           3 ns/iter (+/- 0)
+
+test allocate_stressed_root ... bench:           3 ns/iter (+/- 0)
+
+test height_to_diameter ... bench:           7 ns/iter (+/- 0)
+
+test height_to_leaf_area ... bench:           7 ns/iter (+/- 0)
+
+test age_mortality_rate ... bench:           2 ns/iter (+/- 0)
+
+test self_thinning_mortality ... bench:           9 ns/iter (+/- 0)
+
+test frost_mortality ... bench:           4 ns/iter (+/- 0)
+
+test drought_mortality ... bench:           2 ns/iter (+/- 0)
+
+test competition_growth ... bench:           4 ns/iter (+/- 0)
+
+test shannon_diversity_4sp ... bench:          16 ns/iter (+/- 0)
+
+test shannon_diversity_20sp ... bench:          66 ns/iter (+/- 1)
+
+test net_primary_productivity ... bench:           3 ns/iter (+/- 0)
+

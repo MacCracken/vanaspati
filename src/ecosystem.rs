@@ -40,7 +40,8 @@ pub fn competition_growth(
 ///
 /// `H = -Σ(p_i × ln(p_i))`
 ///
-/// Proportions should be in `(0, 1]` and sum to 1. Values ≤ 0 are skipped.
+/// Caller is responsible for ensuring proportions are in `(0, 1]` and sum to 1.
+/// Values ≤ 0 are skipped. No validation is performed.
 #[must_use]
 pub fn shannon_diversity(proportions: &[f32]) -> f32 {
     let mut h = 0.0_f32;

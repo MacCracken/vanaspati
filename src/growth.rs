@@ -14,6 +14,37 @@ pub enum GrowthStage {
     Dormant,
 }
 
+/// Growth stage from height relative to max height.
+///
+/// - < 1% → Seed
+/// - 1–5% → Germination
+/// - 5–15% → Seedling
+/// - 15–60% → Vegetative
+/// - 60–80% → Flowering
+/// - 80–95% → Fruiting
+/// - > 95% → Senescence
+///
+/// - `current_height` — current plant height (meters)
+/// - `max_height` — species maximum height (meters)
+#[must_use]
+pub fn growth_stage(current_height: f32, max_height: f32) -> GrowthStage {
+    if max_height <= 0.0 || current_height <= 0.0 {
+        return GrowthStage::Seed;
+    }
+    let fraction = (current_height / max_height).clamp(0.0, 1.0);
+    let stage = match fraction {
+        f if f < 0.01 => GrowthStage::Seed,
+        f if f < 0.05 => GrowthStage::Germination,
+        f if f < 0.15 => GrowthStage::Seedling,
+        f if f < 0.60 => GrowthStage::Vegetative,
+        f if f < 0.80 => GrowthStage::Flowering,
+        f if f < 0.95 => GrowthStage::Fruiting,
+        _ => GrowthStage::Senescence,
+    };
+    tracing::trace!(current_height, max_height, fraction, ?stage, "growth_stage");
+    stage
+}
+
 /// Logistic growth model: height(t) = K / (1 + ((K-h0)/h0) × e^(-r×t))
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrowthModel {
@@ -24,6 +55,9 @@ pub struct GrowthModel {
 
 impl GrowthModel {
     /// Height at a given day (meters).
+    ///
+    /// Assumes `initial_height` < `max_height`. If `initial_height` >= `max_height`,
+    /// results are undefined.
     #[must_use]
     pub fn height_at_day(&self, day: f32) -> f32 {
         if self.initial_height <= 0.0 {
@@ -38,6 +72,8 @@ impl GrowthModel {
     }
 
     /// Growth rate at current height (derivative of logistic, meters/day).
+    ///
+    /// Returns negative if `current_height` exceeds `max_height` (overshoot correction).
     #[must_use]
     pub fn daily_growth(&self, current_height: f32) -> f32 {
         let k = self.max_height;
@@ -158,5 +194,54 @@ mod tests {
             assert!(h >= prev, "height should never decrease: day {day}");
             prev = h;
         }
+    }
+
+    // --- growth_stage tests ---
+
+    #[test]
+    fn stage_seed_at_zero() {
+        assert_eq!(growth_stage(0.0, 25.0), GrowthStage::Seed);
+    }
+
+    #[test]
+    fn stage_seed_negative_height() {
+        assert_eq!(growth_stage(-1.0, 25.0), GrowthStage::Seed);
+    }
+
+    #[test]
+    fn stage_seed_zero_max() {
+        assert_eq!(growth_stage(5.0, 0.0), GrowthStage::Seed);
+    }
+
+    #[test]
+    fn stage_progression() {
+        let max = 100.0;
+        assert_eq!(growth_stage(0.5, max), GrowthStage::Seed); // 0.5%
+        assert_eq!(growth_stage(2.0, max), GrowthStage::Germination); // 2%
+        assert_eq!(growth_stage(10.0, max), GrowthStage::Seedling); // 10%
+        assert_eq!(growth_stage(40.0, max), GrowthStage::Vegetative); // 40%
+        assert_eq!(growth_stage(70.0, max), GrowthStage::Flowering); // 70%
+        assert_eq!(growth_stage(90.0, max), GrowthStage::Fruiting); // 90%
+        assert_eq!(growth_stage(98.0, max), GrowthStage::Senescence); // 98%
+    }
+
+    #[test]
+    fn stage_clamped_above_max() {
+        // height > max_height still returns Senescence (clamped to 1.0)
+        assert_eq!(growth_stage(30.0, 25.0), GrowthStage::Senescence);
+    }
+
+    #[test]
+    fn stage_integrates_with_growth_model() {
+        let oak = GrowthModel::oak();
+        let h0 = oak.height_at_day(0.0);
+        let h_mid = oak.height_at_day(500.0);
+        let h_late = oak.height_at_day(5000.0);
+        assert_eq!(growth_stage(h0, oak.max_height), GrowthStage::Seed);
+        assert_ne!(growth_stage(h_mid, oak.max_height), GrowthStage::Seed);
+        assert!(matches!(
+            growth_stage(h_late, oak.max_height),
+            GrowthStage::Fruiting | GrowthStage::Senescence
+        ));
     }
 }

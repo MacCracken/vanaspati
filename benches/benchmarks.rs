@@ -3,9 +3,10 @@ use vanaspati::{
     AllocationStrategy, DispersalMethod, GrowthModel, PhotosynthesisPathway, PollinationMethod,
     RootSystem, Season, age_mortality_rate, allocate, competition_growth, daylight_hours_at,
     dispersal_distance, dispersal_probability, drought_mortality, frost_mortality,
-    growth_modifier_at, height_to_diameter, height_to_leaf_area, net_primary_productivity,
-    pathway_params, photosynthesis_rate, pollination_probability, self_thinning_mortality,
-    shannon_diversity, temperature_factor, temperature_factor_c4, temperature_factor_cam,
+    growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
+    net_primary_productivity, pathway_params, photosynthesis_rate, pollination_probability,
+    self_thinning_mortality, shannon_diversity, temperature_factor, temperature_factor_c4,
+    temperature_factor_cam,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -20,6 +21,9 @@ fn bench_growth(c: &mut Criterion) {
     });
     c.bench_function("growth_oak_daily_growth", |b| {
         b.iter(|| oak.daily_growth(black_box(5.0)))
+    });
+    c.bench_function("growth_stage", |b| {
+        b.iter(|| growth_stage(black_box(12.5), black_box(25.0)))
     });
 }
 
