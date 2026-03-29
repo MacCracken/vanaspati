@@ -1,12 +1,13 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
     AllocationStrategy, DispersalMethod, GrowthModel, PhotosynthesisPathway, PollinationMethod,
-    RootSystem, Season, age_mortality_rate, allocate, competition_growth, daylight_hours_at,
-    dispersal_distance, dispersal_probability, drought_mortality, frost_mortality,
+    RootSystem, Season, age_mortality_rate, allocate, canopy_to_habitat_score, competition_growth,
+    daylight_hours_at, dispersal_distance, dispersal_probability, drought_mortality,
+    frost_mortality, frost_risk_to_mortality, growing_conditions_to_growth_multiplier,
     growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
     net_primary_productivity, pathway_params, photosynthesis_rate, pollination_probability,
-    self_thinning_mortality, shannon_diversity, temperature_factor, temperature_factor_c4,
-    temperature_factor_cam,
+    self_thinning_mortality, shannon_diversity, soil_temperature_to_root_activity, solar_to_par,
+    temperature_factor, temperature_factor_c4, temperature_factor_cam, wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -182,6 +183,42 @@ fn bench_ecosystem(c: &mut Criterion) {
     });
 }
 
+fn bench_bridge(c: &mut Criterion) {
+    c.bench_function("bridge_solar_to_par", |b| {
+        b.iter(|| solar_to_par(black_box(800.0)))
+    });
+    c.bench_function("bridge_growing_conditions", |b| {
+        b.iter(|| {
+            growing_conditions_to_growth_multiplier(
+                black_box(25.0),
+                black_box(25.0),
+                black_box(800.0),
+                black_box(172),
+                black_box(45.0),
+            )
+        })
+    });
+    c.bench_function("bridge_soil_root_activity", |b| {
+        b.iter(|| soil_temperature_to_root_activity(black_box(293.15)))
+    });
+    c.bench_function("bridge_frost_risk_mortality", |b| {
+        b.iter(|| frost_risk_to_mortality(black_box(-5.0), black_box(0.8), black_box(-10.0)))
+    });
+    c.bench_function("bridge_canopy_habitat", |b| {
+        b.iter(|| canopy_to_habitat_score(black_box(4.0)))
+    });
+    c.bench_function("bridge_wind_dispersal", |b| {
+        b.iter(|| {
+            wind_to_dispersal_speed(
+                black_box(10.0),
+                black_box(10.0),
+                black_box(20.0),
+                black_box(1.0),
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -193,5 +230,6 @@ criterion_group!(
     bench_biomass,
     bench_mortality,
     bench_ecosystem,
+    bench_bridge,
 );
 criterion_main!(benches);

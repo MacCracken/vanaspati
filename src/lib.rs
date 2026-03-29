@@ -19,6 +19,7 @@
 //! | [`biomass`] | Carbon allocation across plant organs, allometric scaling |
 //! | [`mortality`] | Age, drought, frost, competition mortality models |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
+//! | [`bridge`] | Cross-crate conversions for badal, ushma, jantu |
 //! | [`error`] | Error types |
 //!
 //! ## Quick Start
@@ -40,6 +41,7 @@
 //! ```
 
 pub mod biomass;
+pub mod bridge;
 pub mod dispersal;
 pub mod ecosystem;
 pub mod error;
@@ -89,3 +91,12 @@ pub use mortality::{
 
 // Ecosystem
 pub use ecosystem::{competition_growth, net_primary_productivity, shannon_diversity};
+
+// Bridge
+pub use bridge::{
+    atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score, evapotranspiration_cooling,
+    frost_risk_to_mortality, frost_to_dormancy, growing_conditions_to_growth_multiplier,
+    rainfall_to_water_supply, seed_production_to_food, soil_temperature_to_growth_factor,
+    soil_temperature_to_root_activity, solar_to_par, wet_bulb_to_heat_stress,
+    wind_to_dispersal_speed,
+};

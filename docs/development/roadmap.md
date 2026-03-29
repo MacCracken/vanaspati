@@ -52,10 +52,10 @@ Vanaspati does NOT own:
 
 ## Cross-Crate Bridges
 
-- [ ] **`bridge.rs` module** — primitive-value conversions for cross-crate botany
-- [ ] **badal bridge**: temperature (C), rainfall (mm), solar radiation (W/m2) -> growth rate multiplier; frost days -> dormancy trigger
-- [ ] **jantu bridge**: canopy density (0-1) -> habitat cover score; fruit/seed production rate -> food availability
-- [ ] **ushma bridge**: soil temperature (K) -> root activity scaling; evapotranspiration rate -> cooling effect
+- [x] **`bridge.rs` module** — primitive-value conversions for cross-crate botany (done: 13 functions)
+- [x] **badal bridge**: solar_to_par, atmosphere_to_photosynthesis_inputs, rainfall_to_water_supply, frost_risk_to_mortality, frost_to_dormancy, wind_to_dispersal_speed, growing_conditions_to_growth_multiplier (done)
+- [x] **jantu bridge**: canopy_to_habitat_score (Beer-Lambert LAI), seed_production_to_food (log saturation) (done)
+- [x] **ushma bridge**: soil_temperature_to_root_activity, soil_temperature_to_growth_factor, evapotranspiration_cooling, wet_bulb_to_heat_stress (done)
 
 ---
 
