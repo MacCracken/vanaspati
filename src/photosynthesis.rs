@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 /// - `light_intensity` — PAR (µmol photons/m²/s)
 #[must_use]
 pub fn photosynthesis_rate(max_rate: f32, quantum_yield: f32, light_intensity: f32) -> f32 {
-    if max_rate <= 0.0 || light_intensity <= 0.0 {
+    if max_rate <= 0.0 || quantum_yield <= 0.0 || light_intensity <= 0.0 {
         return 0.0;
     }
     let rate = max_rate * (1.0 - (-quantum_yield * light_intensity / max_rate).exp());
@@ -140,7 +140,7 @@ pub fn temperature_factor_cam(temp_celsius: f32) -> f32 {
 #[must_use]
 #[inline]
 pub fn canopy_light_at_depth(par_above: f32, lai_above: f32, extinction_k: f32) -> f32 {
-    if par_above <= 0.0 || lai_above < 0.0 {
+    if par_above <= 0.0 || lai_above < 0.0 || extinction_k < 0.0 {
         return 0.0;
     }
     let par = par_above * (-extinction_k * lai_above).exp();
@@ -166,7 +166,7 @@ pub fn canopy_light_at_depth(par_above: f32, lai_above: f32, extinction_k: f32) 
 #[must_use]
 #[inline]
 pub fn understory_light_fraction(total_lai: f32, extinction_k: f32) -> f32 {
-    if total_lai <= 0.0 {
+    if total_lai <= 0.0 || extinction_k < 0.0 {
         return 1.0;
     }
     let fraction = (-extinction_k * total_lai).exp();
@@ -191,7 +191,7 @@ pub fn understory_light_fraction(total_lai: f32, extinction_k: f32) -> f32 {
 #[must_use]
 #[inline]
 pub fn light_interception(total_lai: f32, extinction_k: f32) -> f32 {
-    if total_lai <= 0.0 {
+    if total_lai <= 0.0 || extinction_k < 0.0 {
         return 0.0;
     }
     let intercepted = 1.0 - (-extinction_k * total_lai).exp();
@@ -478,5 +478,32 @@ mod tests {
     fn shaded_photosynthesis_very_dense_near_zero() {
         let deep = shaded_photosynthesis_rate(20.0, 0.05, 1000.0, 10.0, 0.7);
         assert!(deep < 1.0, "LAI=10, k=0.7 should nearly extinguish light");
+    }
+
+    // --- Negative input guard tests ---
+
+    #[test]
+    fn negative_quantum_yield_returns_zero() {
+        assert_eq!(photosynthesis_rate(20.0, -0.05, 800.0), 0.0);
+    }
+
+    #[test]
+    fn zero_quantum_yield_returns_zero() {
+        assert_eq!(photosynthesis_rate(20.0, 0.0, 800.0), 0.0);
+    }
+
+    #[test]
+    fn negative_extinction_k_canopy_returns_zero() {
+        assert_eq!(canopy_light_at_depth(1000.0, 3.0, -0.5), 0.0);
+    }
+
+    #[test]
+    fn negative_extinction_k_understory_returns_one() {
+        assert_eq!(understory_light_fraction(3.0, -0.5), 1.0);
+    }
+
+    #[test]
+    fn negative_extinction_k_interception_returns_zero() {
+        assert_eq!(light_interception(3.0, -0.5), 0.0);
     }
 }
