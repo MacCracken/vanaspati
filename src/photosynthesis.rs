@@ -126,6 +126,102 @@ pub fn temperature_factor_cam(temp_celsius: f32) -> f32 {
     factor
 }
 
+// ── Canopy light competition (Beer-Lambert) ───────────────────────────
+
+/// Light intensity at a given depth in a canopy (µmol photons/m²/s).
+///
+/// Beer-Lambert law: `I(L) = I₀ × e^(-k × L)`
+///
+/// - `par_above` — PAR above the canopy (µmol photons/m²/s)
+/// - `lai_above` — cumulative leaf area index above this point (m² leaf / m² ground)
+/// - `extinction_k` — extinction coefficient (dimensionless, typically 0.3–0.8)
+///
+/// Typical k values: broadleaf 0.5–0.7, conifer 0.3–0.5, grass 0.6–0.8.
+#[must_use]
+#[inline]
+pub fn canopy_light_at_depth(par_above: f32, lai_above: f32, extinction_k: f32) -> f32 {
+    if par_above <= 0.0 || lai_above < 0.0 {
+        return 0.0;
+    }
+    let par = par_above * (-extinction_k * lai_above).exp();
+    tracing::trace!(
+        par_above,
+        lai_above,
+        extinction_k,
+        par,
+        "canopy_light_at_depth"
+    );
+    par
+}
+
+/// Fraction of light reaching the forest floor (0.0–1.0).
+///
+/// `fraction = e^(-k × LAI_total)`
+///
+/// Useful for determining understory light availability and whether
+/// shade-tolerant species can survive beneath a canopy.
+///
+/// - `total_lai` — total canopy leaf area index (m² leaf / m² ground)
+/// - `extinction_k` — extinction coefficient (dimensionless)
+#[must_use]
+#[inline]
+pub fn understory_light_fraction(total_lai: f32, extinction_k: f32) -> f32 {
+    if total_lai <= 0.0 {
+        return 1.0;
+    }
+    let fraction = (-extinction_k * total_lai).exp();
+    tracing::trace!(
+        total_lai,
+        extinction_k,
+        fraction,
+        "understory_light_fraction"
+    );
+    fraction
+}
+
+/// Fraction of light intercepted by the canopy (0.0–1.0).
+///
+/// `intercepted = 1 - e^(-k × LAI)`
+///
+/// This is the complement of `understory_light_fraction` — the proportion
+/// of incoming light captured by leaves for photosynthesis.
+///
+/// - `total_lai` — total canopy leaf area index (m² leaf / m² ground)
+/// - `extinction_k` — extinction coefficient (dimensionless)
+#[must_use]
+#[inline]
+pub fn light_interception(total_lai: f32, extinction_k: f32) -> f32 {
+    if total_lai <= 0.0 {
+        return 0.0;
+    }
+    let intercepted = 1.0 - (-extinction_k * total_lai).exp();
+    tracing::trace!(total_lai, extinction_k, intercepted, "light_interception");
+    intercepted
+}
+
+/// Effective photosynthesis rate under a canopy (µmol CO₂/m²/s).
+///
+/// Combines Beer-Lambert light extinction with the light response curve:
+/// first attenuates PAR through the canopy, then computes photosynthesis
+/// at the reduced light level.
+///
+/// - `max_rate` — Pmax (µmol CO₂/m²/s)
+/// - `quantum_yield` — α (mol CO₂ / mol photons)
+/// - `par_above_canopy` — PAR above the canopy (µmol photons/m²/s)
+/// - `lai_above` — cumulative LAI above this plant (m² leaf / m² ground)
+/// - `extinction_k` — extinction coefficient (dimensionless)
+#[must_use]
+pub fn shaded_photosynthesis_rate(
+    max_rate: f32,
+    quantum_yield: f32,
+    par_above_canopy: f32,
+    lai_above: f32,
+    extinction_k: f32,
+) -> f32 {
+    let par_at_depth = canopy_light_at_depth(par_above_canopy, lai_above, extinction_k);
+    photosynthesis_rate(max_rate, quantum_yield, par_at_depth)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -294,5 +390,93 @@ mod tests {
     fn c4_extreme_cold_near_zero() {
         let f = temperature_factor_c4(-10.0);
         assert!(f < 0.01);
+    }
+
+    // --- Canopy light competition tests ---
+
+    #[test]
+    fn canopy_light_no_lai() {
+        let par = canopy_light_at_depth(1000.0, 0.0, 0.5);
+        assert!((par - 1000.0).abs() < 0.1, "no canopy → full light");
+    }
+
+    #[test]
+    fn canopy_light_decreases_with_lai() {
+        let open = canopy_light_at_depth(1000.0, 1.0, 0.5);
+        let dense = canopy_light_at_depth(1000.0, 5.0, 0.5);
+        assert!(open > dense, "denser canopy → less light");
+    }
+
+    #[test]
+    fn canopy_light_zero_par() {
+        assert_eq!(canopy_light_at_depth(0.0, 3.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn canopy_light_negative_par() {
+        assert_eq!(canopy_light_at_depth(-100.0, 3.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn canopy_light_known_value() {
+        // I = 1000 × e^(-0.5 × 3) = 1000 × e^(-1.5) ≈ 223.1
+        let par = canopy_light_at_depth(1000.0, 3.0, 0.5);
+        assert!((par - 223.1).abs() < 1.0, "got {par}");
+    }
+
+    #[test]
+    fn understory_no_canopy() {
+        assert!((understory_light_fraction(0.0, 0.5) - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn understory_dense_canopy() {
+        let f = understory_light_fraction(6.0, 0.5);
+        assert!(f < 0.1, "LAI=6 should block most light, got {f}");
+    }
+
+    #[test]
+    fn understory_plus_interception_equals_one() {
+        let lai = 4.0;
+        let k = 0.6;
+        let under = understory_light_fraction(lai, k);
+        let inter = light_interception(lai, k);
+        assert!(
+            (under + inter - 1.0).abs() < 0.001,
+            "understory + interception should = 1.0"
+        );
+    }
+
+    #[test]
+    fn light_interception_zero_lai() {
+        assert_eq!(light_interception(0.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn light_interception_increases_with_lai() {
+        let sparse = light_interception(1.0, 0.5);
+        let dense = light_interception(6.0, 0.5);
+        assert!(dense > sparse);
+    }
+
+    #[test]
+    fn shaded_photosynthesis_less_than_open() {
+        let open = photosynthesis_rate(20.0, 0.05, 1000.0);
+        let shaded = shaded_photosynthesis_rate(20.0, 0.05, 1000.0, 3.0, 0.5);
+        assert!(shaded < open, "shaded plant should photosynthesize less");
+        assert!(shaded > 0.0, "but still some");
+    }
+
+    #[test]
+    fn shaded_photosynthesis_no_canopy_equals_open() {
+        let open = photosynthesis_rate(20.0, 0.05, 1000.0);
+        let no_shade = shaded_photosynthesis_rate(20.0, 0.05, 1000.0, 0.0, 0.5);
+        assert!((open - no_shade).abs() < 0.01);
+    }
+
+    #[test]
+    fn shaded_photosynthesis_very_dense_near_zero() {
+        let deep = shaded_photosynthesis_rate(20.0, 0.05, 1000.0, 10.0, 0.7);
+        assert!(deep < 1.0, "LAI=10, k=0.7 should nearly extinguish light");
     }
 }

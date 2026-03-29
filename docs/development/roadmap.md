@@ -86,7 +86,7 @@ Vanaspati does NOT own:
 ### Medium Priority
 
 - [x] **Biomass allocation** — carbon partitioning (Balanced, StressedRoot, Reproductive), allometric scaling (height→diameter, height→leaf area) (done: V0.2.0)
-- [ ] **Light competition / canopy structure** — Beer-Lambert canopy extinction (`I = I0 × e^(-k × LAI)`) for multi-plant shading
+- [x] **Light competition / canopy structure** — Beer-Lambert: canopy_light_at_depth, understory_light_fraction, light_interception, shaded_photosynthesis_rate (done)
 - [x] C4/CAM photosynthesis pathways — PhotosynthesisPathway enum, pathway_params, type-specific temperature factors (done: V0.2.0)
 - [x] Southern hemisphere / latitude-parameterized seasons — sunrise equation, daylight_hours_at, growth_modifier_at, from_day_latitude (done: V0.2.0)
 - [ ] **Decomposition and litter** — exponential decay with temperature/moisture dependence, nutrient cycling

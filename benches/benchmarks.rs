@@ -44,6 +44,22 @@ fn bench_photosynthesis(c: &mut Criterion) {
     c.bench_function("pathway_params", |b| {
         b.iter(|| pathway_params(black_box(PhotosynthesisPathway::C4)))
     });
+    c.bench_function("canopy_light_at_depth", |b| {
+        b.iter(|| {
+            vanaspati::canopy_light_at_depth(black_box(1000.0), black_box(3.0), black_box(0.5))
+        })
+    });
+    c.bench_function("shaded_photosynthesis_rate", |b| {
+        b.iter(|| {
+            vanaspati::shaded_photosynthesis_rate(
+                black_box(20.0),
+                black_box(0.05),
+                black_box(1000.0),
+                black_box(3.0),
+                black_box(0.5),
+            )
+        })
+    });
 }
 
 fn bench_season(c: &mut Criterion) {

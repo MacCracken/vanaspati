@@ -63,8 +63,9 @@ pub use growth::{GrowthModel, GrowthStage, growth_stage};
 
 // Photosynthesis
 pub use photosynthesis::{
-    PhotosynthesisPathway, light_compensation_point, pathway_params, photosynthesis_rate,
-    temperature_factor, temperature_factor_c4, temperature_factor_cam, water_use_efficiency,
+    PhotosynthesisPathway, canopy_light_at_depth, light_compensation_point, light_interception,
+    pathway_params, photosynthesis_rate, shaded_photosynthesis_rate, temperature_factor,
+    temperature_factor_c4, temperature_factor_cam, understory_light_fraction, water_use_efficiency,
 };
 
 // Season
