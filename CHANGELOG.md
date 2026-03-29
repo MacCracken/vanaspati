@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **dispersal** — `DispersalMethod` enum (Wind, Animal, Gravity, Water, Explosive), `SeedProfile` struct with presets (dandelion, maple, acorn, coconut), `dispersal_distance` with method-specific formulas, `dispersal_probability` with exponential decay kernel
+- **biomass** — `BiomassPool` struct with presets (oak, bamboo, grass), `AllocationStrategy` enum (Balanced, StressedRoot, Reproductive), `allocate` carbon partitioning, `height_to_diameter` and `height_to_leaf_area` allometric scaling functions
+- **mortality** — `MortalityCause` enum, `age_mortality_rate` (Weibull hazard), `self_thinning_mortality` (Yoda's -3/2 power law), `frost_mortality` (logistic threshold), `drought_mortality` (quadratic deficit)
+- **photosynthesis** — `PhotosynthesisPathway` enum (C3, C4, CAM), `pathway_params` returning (optimum_temp, quantum_yield, max_rate), `temperature_factor_c4` (σ²=150, optimum 32°C), `temperature_factor_cam` (σ²=250, optimum 28°C)
+- **season** — `daylight_hours_at(day, latitude)` using sunrise equation with solar declination, `growth_modifier_at(day, latitude)` continuous daylight-based modifier, `Season::from_day_latitude` hemisphere-aware season mapping
 - **docs** — README.md, CLAUDE.md, CHANGELOG.md, CONTRIBUTING.md, SECURITY.md, architecture overview
-- **lib** — complete re-exports for all public types and functions
+- **lib** — complete re-exports for all public types and functions (9 modules, 30+ items)
 - **all modules** — tracing instrumentation on all operations
 - **all modules** — unit documentation with parameter descriptions and physical units
 - **examples** — real `basic.rs` example demonstrating all modules

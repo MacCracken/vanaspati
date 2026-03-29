@@ -1,8 +1,11 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
-    GrowthModel, PollinationMethod, RootSystem, Season, competition_growth,
-    net_primary_productivity, photosynthesis_rate, pollination_probability, shannon_diversity,
-    temperature_factor,
+    AllocationStrategy, DispersalMethod, GrowthModel, PhotosynthesisPathway, PollinationMethod,
+    RootSystem, Season, age_mortality_rate, allocate, competition_growth, daylight_hours_at,
+    dispersal_distance, dispersal_probability, drought_mortality, frost_mortality,
+    growth_modifier_at, height_to_diameter, height_to_leaf_area, net_primary_productivity,
+    pathway_params, photosynthesis_rate, pollination_probability, self_thinning_mortality,
+    shannon_diversity, temperature_factor, temperature_factor_c4, temperature_factor_cam,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -27,6 +30,15 @@ fn bench_photosynthesis(c: &mut Criterion) {
     c.bench_function("temperature_factor", |b| {
         b.iter(|| temperature_factor(black_box(25.0), black_box(25.0)))
     });
+    c.bench_function("temperature_factor_c4", |b| {
+        b.iter(|| temperature_factor_c4(black_box(32.0)))
+    });
+    c.bench_function("temperature_factor_cam", |b| {
+        b.iter(|| temperature_factor_cam(black_box(28.0)))
+    });
+    c.bench_function("pathway_params", |b| {
+        b.iter(|| pathway_params(black_box(PhotosynthesisPathway::C4)))
+    });
 }
 
 fn bench_season(c: &mut Criterion) {
@@ -38,6 +50,18 @@ fn bench_season(c: &mut Criterion) {
     });
     c.bench_function("season_daylight_hours", |b| {
         b.iter(|| Season::Summer.daylight_hours())
+    });
+    c.bench_function("daylight_hours_at_45n", |b| {
+        b.iter(|| daylight_hours_at(black_box(172), black_box(45.0)))
+    });
+    c.bench_function("daylight_hours_at_equator", |b| {
+        b.iter(|| daylight_hours_at(black_box(172), black_box(0.0)))
+    });
+    c.bench_function("growth_modifier_at_45n", |b| {
+        b.iter(|| growth_modifier_at(black_box(172), black_box(45.0)))
+    });
+    c.bench_function("from_day_latitude_south", |b| {
+        b.iter(|| Season::from_day_latitude(black_box(15), black_box(-35.0)))
     });
 }
 
@@ -59,6 +83,70 @@ fn bench_pollination(c: &mut Criterion) {
                 black_box(0.0),
             )
         })
+    });
+}
+
+fn bench_dispersal(c: &mut Criterion) {
+    c.bench_function("dispersal_distance_wind", |b| {
+        b.iter(|| {
+            dispersal_distance(
+                black_box(DispersalMethod::Wind),
+                black_box(0.001),
+                black_box(10.0),
+                black_box(5.0),
+            )
+        })
+    });
+    c.bench_function("dispersal_distance_gravity", |b| {
+        b.iter(|| {
+            dispersal_distance(
+                black_box(DispersalMethod::Gravity),
+                black_box(6.0),
+                black_box(25.0),
+                black_box(0.0),
+            )
+        })
+    });
+    c.bench_function("dispersal_probability_wind", |b| {
+        b.iter(|| dispersal_probability(black_box(DispersalMethod::Wind), black_box(50.0)))
+    });
+    c.bench_function("dispersal_probability_animal", |b| {
+        b.iter(|| dispersal_probability(black_box(DispersalMethod::Animal), black_box(200.0)))
+    });
+}
+
+fn bench_biomass(c: &mut Criterion) {
+    c.bench_function("allocate_balanced", |b| {
+        b.iter(|| allocate(black_box(1000.0), black_box(AllocationStrategy::Balanced)))
+    });
+    c.bench_function("allocate_stressed_root", |b| {
+        b.iter(|| {
+            allocate(
+                black_box(1000.0),
+                black_box(AllocationStrategy::StressedRoot),
+            )
+        })
+    });
+    c.bench_function("height_to_diameter", |b| {
+        b.iter(|| height_to_diameter(black_box(25.0), black_box(0.04)))
+    });
+    c.bench_function("height_to_leaf_area", |b| {
+        b.iter(|| height_to_leaf_area(black_box(25.0), black_box(8.0)))
+    });
+}
+
+fn bench_mortality(c: &mut Criterion) {
+    c.bench_function("age_mortality_rate", |b| {
+        b.iter(|| age_mortality_rate(black_box(10000.0), black_box(36500.0)))
+    });
+    c.bench_function("self_thinning_mortality", |b| {
+        b.iter(|| self_thinning_mortality(black_box(5.0), black_box(1.0)))
+    });
+    c.bench_function("frost_mortality", |b| {
+        b.iter(|| frost_mortality(black_box(-15.0), black_box(-10.0)))
+    });
+    c.bench_function("drought_mortality", |b| {
+        b.iter(|| drought_mortality(black_box(50.0), black_box(100.0)))
     });
 }
 
@@ -97,6 +185,9 @@ criterion_group!(
     bench_season,
     bench_root,
     bench_pollination,
+    bench_dispersal,
+    bench_biomass,
+    bench_mortality,
     bench_ecosystem,
 );
 criterion_main!(benches);

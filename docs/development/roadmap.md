@@ -79,16 +79,16 @@ Vanaspati does NOT own:
 
 - [ ] **Water/soil moisture system** — precipitation, soil water storage, root uptake, drought stress on growth/photosynthesis. Single biggest missing piece — water is the primary limiting factor for plant growth in most terrestrial ecosystems
 - [ ] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
-- [ ] **Seed dispersal** — wind, animal, gravity, ballistic dispersal with distance kernels. Required for spatial vegetation dynamics
-- [ ] **Mortality and disturbance** — drought, competition-driven (self-thinning / Yoda's -3/2 power law), fire, disease, windthrow, age-related
+- [x] **Seed dispersal** — wind, animal, gravity, water, explosive dispersal with exponential decay kernels (done: V0.2.0)
+- [x] **Mortality and disturbance** — age (Weibull), drought (quadratic deficit), frost (logistic), self-thinning (Yoda's -3/2) (done: V0.2.0). Remaining: fire, disease, windthrow
 - [ ] **Phenology (growing degree days)** — replace/augment rigid season boundaries with accumulated heat + photoperiod triggers + chilling requirements
 
 ### Medium Priority
 
-- [ ] **Biomass allocation** — carbon partitioning between roots, stems, leaves, reproductive organs. Allometric model (height → diameter, leaf area, root mass)
+- [x] **Biomass allocation** — carbon partitioning (Balanced, StressedRoot, Reproductive), allometric scaling (height→diameter, height→leaf area) (done: V0.2.0)
 - [ ] **Light competition / canopy structure** — Beer-Lambert canopy extinction (`I = I0 × e^(-k × LAI)`) for multi-plant shading
-- [ ] C4/CAM photosynthesis pathways — different temperature optima, water-use efficiencies
-- [ ] Southern hemisphere / latitude-parameterized seasons
+- [x] C4/CAM photosynthesis pathways — PhotosynthesisPathway enum, pathway_params, type-specific temperature factors (done: V0.2.0)
+- [x] Southern hemisphere / latitude-parameterized seasons — sunrise equation, daylight_hours_at, growth_modifier_at, from_day_latitude (done: V0.2.0)
 - [ ] **Decomposition and litter** — exponential decay with temperature/moisture dependence, nutrient cycling
 - [ ] **Stomatal conductance** — Ball-Berry model coupling photosynthesis, water loss, and temperature
 
