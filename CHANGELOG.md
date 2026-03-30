@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-29
+
 ### Added
 - **respiration** — `maintenance_respiration` (Ryan 1991, N-proportional × Q10 temperature), `growth_respiration` (Penning de Vries 1975, 25% construction cost), `partitioned_maintenance_respiration` (organ-specific coefficients), `total_autotrophic_respiration`, `net_primary_productivity_carbon` (NPP = GPP - Ra), `organ_respiration_coefficient`, `growth_respiration_fraction`
 - **lai** — `LeafHabit` enum (Deciduous, Evergreen, DroughtDeciduous), `lai_from_biomass` (SLA-based), `seasonal_lai_multiplier` (hemisphere-aware phenology), `drought_leaf_retention` (habit-dependent), `frost_leaf_loss`, `effective_lai` (combining all factors), `max_lai`

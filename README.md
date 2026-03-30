@@ -47,7 +47,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-vanaspati = "0.2"
+vanaspati = "1.0"
 ```
 
 ```rust
@@ -73,7 +73,7 @@ let fluxes = daily_water_balance(&mut soil, 10.0, 3.0, 2.0);
 
 ```toml
 [dependencies]
-vanaspati = { version = "0.2", features = ["logging"] }
+vanaspati = { version = "1.0", features = ["logging"] }
 ```
 
 | Feature        | Description                                  |
