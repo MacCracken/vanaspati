@@ -99,8 +99,8 @@ pub use mortality::{
 // Phenology
 pub use phenology::{
     PhenologicalEvent, accumulated_chill, accumulated_gdd, chilling_contribution, dormancy_broken,
-    dormancy_onset_triggered, event_reached, gdd_threshold, growing_degree_days,
-    phenological_progress, senescence_triggered,
+    dormancy_onset_triggered, event_reached, event_to_growth_stage, gdd_threshold,
+    growing_degree_days, phenological_progress, senescence_triggered,
 };
 
 // Decomposition

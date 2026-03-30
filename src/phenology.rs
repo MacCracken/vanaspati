@@ -185,6 +185,10 @@ pub fn senescence_triggered(
 /// Photoperiod-triggered dormancy onset check.
 ///
 /// Dormancy is triggered by very short days OR first hard frost.
+/// Uses OR logic — either condition alone is sufficient.
+///
+/// For probability-weighted frost dormancy from badal weather data,
+/// use `bridge::frost_to_dormancy()` instead (AND logic: risk > 0.5 AND temp < threshold).
 ///
 /// - `daylight_hours` — current day length (hours)
 /// - `daylight_threshold` — photoperiod trigger (hours, typically 10.0)
@@ -235,6 +239,34 @@ pub fn phenological_progress(accumulated_gdd: f32, event: PhenologicalEvent) -> 
         "phenological_progress"
     );
     progress
+}
+
+/// Map a phenological event to the corresponding growth stage.
+///
+/// Provides a bridge between GDD-driven phenology and height-fraction-based
+/// growth stages. Useful when consumers need a single stage indicator.
+///
+/// | Event | Stage |
+/// |-------|-------|
+/// | DormancyBreak | Dormant |
+/// | BudBreak | Germination |
+/// | LeafOut | Seedling |
+/// | Flowering | Flowering |
+/// | FruitSet | Fruiting |
+/// | LeafSenescence | Senescence |
+/// | DormancyOnset | Dormant |
+#[must_use]
+pub fn event_to_growth_stage(event: PhenologicalEvent) -> crate::growth::GrowthStage {
+    use crate::growth::GrowthStage;
+    match event {
+        PhenologicalEvent::DormancyBreak => GrowthStage::Dormant,
+        PhenologicalEvent::BudBreak => GrowthStage::Germination,
+        PhenologicalEvent::LeafOut => GrowthStage::Seedling,
+        PhenologicalEvent::Flowering => GrowthStage::Flowering,
+        PhenologicalEvent::FruitSet => GrowthStage::Fruiting,
+        PhenologicalEvent::LeafSenescence => GrowthStage::Senescence,
+        PhenologicalEvent::DormancyOnset => GrowthStage::Dormant,
+    }
 }
 
 #[cfg(test)]
@@ -450,5 +482,28 @@ mod tests {
 
         // Winter: dormancy
         assert!(dormancy_onset_triggered(9.0, 10.0, -3.0, -2.0));
+    }
+
+    // --- Event to growth stage mapping ---
+
+    #[test]
+    fn event_maps_to_stage() {
+        use crate::growth::GrowthStage;
+        assert_eq!(
+            event_to_growth_stage(PhenologicalEvent::Flowering),
+            GrowthStage::Flowering
+        );
+        assert_eq!(
+            event_to_growth_stage(PhenologicalEvent::FruitSet),
+            GrowthStage::Fruiting
+        );
+        assert_eq!(
+            event_to_growth_stage(PhenologicalEvent::DormancyOnset),
+            GrowthStage::Dormant
+        );
+        assert_eq!(
+            event_to_growth_stage(PhenologicalEvent::LeafSenescence),
+            GrowthStage::Senescence
+        );
     }
 }
