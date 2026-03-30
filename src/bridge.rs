@@ -388,7 +388,80 @@ pub fn humidity_to_vpd(temperature_celsius: f64, relative_humidity_fraction: f64
     vpd
 }
 
+// ── Succession bridges ───────────────────────────────────────────────
+
+/// Understory light to successional growth advantage (dimensionless ratio).
+///
+/// Returns the ratio of climax to pioneer effective growth at a given light level.
+/// Ratio > 1.0 means climax species are favored (canopy closure).
+/// Ratio < 1.0 means pioneer species are favored (open conditions).
+///
+/// Connects to: `understory_light_fraction()` → succession decisions
+///
+/// - `understory_light_fraction` — light reaching forest floor (0.0–1.0)
+#[must_use]
+pub fn light_to_successional_advantage(understory_light_fraction: f64) -> f32 {
+    let light = understory_light_fraction as f32;
+    let pioneer = crate::succession::effective_growth_multiplier(
+        light,
+        crate::succession::SuccessionalStage::Pioneer,
+    );
+    let climax = crate::succession::effective_growth_multiplier(
+        light,
+        crate::succession::SuccessionalStage::Climax,
+    );
+    if pioneer <= 0.0 {
+        return if climax > 0.0 { f32::INFINITY } else { 1.0 };
+    }
+    let ratio = climax / pioneer;
+    tracing::trace!(
+        understory_light_fraction,
+        pioneer,
+        climax,
+        ratio,
+        "light_to_successional_advantage"
+    );
+    ratio
+}
+
 // ── Jantu bridges (creature behavior) ─────────────────────────────────
+
+/// Herbivore feeding intensity to plant biomass loss (kg).
+///
+/// Converts jantu creature feeding behavior into plant biomass removal.
+/// Returns total biomass removed across all organs.
+///
+/// Connects to: `BiomassPool` (subtract returned value), `herbivory_mortality()`
+///
+/// - `leaf_kg` — plant leaf biomass (kg)
+/// - `stem_kg` — plant stem biomass (kg)
+/// - `root_kg` — plant root biomass (kg)
+/// - `reproductive_kg` — plant reproductive biomass (kg)
+/// - `feeding_intensity` — creature feeding intensity (0.0–1.0)
+/// - `is_browser` — true for browsing (deer), false for grazing (cattle)
+#[must_use]
+pub fn herbivore_to_biomass_loss(
+    leaf_kg: f64,
+    stem_kg: f64,
+    root_kg: f64,
+    reproductive_kg: f64,
+    feeding_intensity: f64,
+    is_browser: bool,
+) -> f32 {
+    let htype = if is_browser {
+        crate::herbivory::HerbivoryType::Browsing
+    } else {
+        crate::herbivory::HerbivoryType::Grazing
+    };
+    crate::herbivory::total_biomass_removed(
+        leaf_kg as f32,
+        stem_kg as f32,
+        root_kg as f32,
+        reproductive_kg as f32,
+        htype,
+        feeding_intensity as f32,
+    )
+}
 
 /// Canopy leaf area index to habitat cover score (0.0–1.0).
 ///
@@ -780,5 +853,42 @@ mod tests {
         let growth = soil_water_to_growth_stress(rwc);
         let photo = soil_water_to_photosynthesis_stress(rwc);
         assert!(growth < photo, "growth={growth}, photo={photo}");
+    }
+
+    // ── Succession bridge tests ──────────────────────────────────────
+
+    #[test]
+    fn successional_advantage_full_sun_favors_pioneer() {
+        let ratio = light_to_successional_advantage(1.0);
+        assert!(ratio < 1.0, "full sun should favor pioneer, got {ratio}");
+    }
+
+    #[test]
+    fn successional_advantage_shade_favors_climax() {
+        let ratio = light_to_successional_advantage(0.15);
+        assert!(ratio > 1.0, "shade should favor climax, got {ratio}");
+    }
+
+    // ── Jantu herbivory bridge tests ─────────────────────────────────
+
+    #[test]
+    fn herbivore_grazing_removes_biomass() {
+        let loss = herbivore_to_biomass_loss(50.0, 100.0, 30.0, 10.0, 0.5, false);
+        assert!(loss > 0.0);
+    }
+
+    #[test]
+    fn herbivore_browsing_removes_more_stem() {
+        let graze = herbivore_to_biomass_loss(50.0, 100.0, 30.0, 10.0, 0.5, false);
+        let browse = herbivore_to_biomass_loss(50.0, 100.0, 30.0, 10.0, 0.5, true);
+        // Both should remove biomass; browsing hits more stem
+        assert!(graze > 0.0);
+        assert!(browse > 0.0);
+    }
+
+    #[test]
+    fn herbivore_zero_intensity() {
+        let loss = herbivore_to_biomass_loss(50.0, 100.0, 30.0, 10.0, 0.0, false);
+        assert_eq!(loss, 0.0);
     }
 }

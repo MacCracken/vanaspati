@@ -1,20 +1,22 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
-    AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhenologicalEvent,
+    AllocationStrategy, DispersalMethod, GrowthModel, HerbivoryType, LitterType, PhenologicalEvent,
     PhotosynthesisPathway, PollinationMethod, RootSystem, Season, SoilNitrogen, SoilType,
-    SoilWater, accumulated_gdd, age_mortality_rate, allocate, ball_berry_conductance,
-    canopy_to_habitat_score, competition_growth, daily_decomposition_rate, daily_nitrogen_balance,
-    daily_water_balance, daylight_hours_at, dispersal_distance, dispersal_probability,
-    drought_mortality, event_reached, frost_mortality, frost_risk_to_mortality,
+    SoilWater, SuccessionalStage, VegetativeMethod, accumulated_gdd, age_mortality_rate, allocate,
+    ball_berry_conductance, biomass_removal, canopy_to_habitat_score, clonal_area_m2,
+    compensatory_growth_factor, competition_growth, daily_decomposition_rate,
+    daily_nitrogen_balance, daily_water_balance, daylight_hours_at, dispersal_distance,
+    dispersal_probability, drought_mortality, effective_growth_multiplier,
+    establishment_probability, event_reached, frost_mortality, frost_risk_to_mortality,
     growing_conditions_to_growth_multiplier, growing_degree_days, growth_modifier_at, growth_stage,
-    height_to_diameter, height_to_leaf_area, infiltration_rate, mineralization_rate,
-    net_primary_productivity, nitrogen_release, nitrogen_stress_factor, nitrogen_uptake,
-    pathway_params, phenological_progress, photosynthesis_rate, pollination_probability,
-    remaining_mass, saturated_conductivity, self_thinning_mortality, shannon_diversity,
-    soil_evaporation, soil_temperature_to_root_activity, solar_to_par, temperature_factor,
-    temperature_factor_c4, temperature_factor_cam, total_leaf_conductance, transpiration_rate,
-    vapor_pressure_deficit, water_stress_factor, water_stress_growth_factor,
-    wind_to_dispersal_speed,
+    height_to_diameter, height_to_leaf_area, herbivory_mortality, infiltration_rate,
+    mineralization_rate, net_primary_productivity, nitrogen_release, nitrogen_stress_factor,
+    nitrogen_uptake, pathway_params, phenological_progress, photosynthesis_rate,
+    pollination_probability, remaining_mass, resource_limited_ramets, saturated_conductivity,
+    self_thinning_mortality, shannon_diversity, soil_evaporation,
+    soil_temperature_to_root_activity, solar_to_par, temperature_factor, temperature_factor_c4,
+    temperature_factor_cam, total_leaf_conductance, transpiration_rate, vapor_pressure_deficit,
+    water_stress_factor, water_stress_growth_factor, wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -371,6 +373,51 @@ fn bench_nitrogen(c: &mut Criterion) {
     });
 }
 
+fn bench_herbivory(c: &mut Criterion) {
+    c.bench_function("biomass_removal_grazing", |b| {
+        b.iter(|| {
+            biomass_removal(
+                black_box(50.0),
+                black_box(100.0),
+                black_box(30.0),
+                black_box(10.0),
+                black_box(HerbivoryType::Grazing),
+                black_box(0.5),
+            )
+        })
+    });
+    c.bench_function("compensatory_growth_factor", |b| {
+        b.iter(|| compensatory_growth_factor(black_box(0.3), black_box(0.3)))
+    });
+    c.bench_function("herbivory_mortality", |b| {
+        b.iter(|| herbivory_mortality(black_box(0.85), black_box(0.5)))
+    });
+}
+
+fn bench_succession(c: &mut Criterion) {
+    c.bench_function("establishment_probability", |b| {
+        b.iter(|| establishment_probability(black_box(0.5), black_box(SuccessionalStage::Pioneer)))
+    });
+    c.bench_function("effective_growth_multiplier", |b| {
+        b.iter(|| effective_growth_multiplier(black_box(0.5), black_box(SuccessionalStage::Climax)))
+    });
+}
+
+fn bench_reproduction(c: &mut Criterion) {
+    c.bench_function("resource_limited_ramets", |b| {
+        b.iter(|| {
+            resource_limited_ramets(
+                black_box(VegetativeMethod::Rhizome),
+                black_box(0.8),
+                black_box(0.7),
+            )
+        })
+    });
+    c.bench_function("clonal_area_m2", |b| {
+        b.iter(|| clonal_area_m2(black_box(VegetativeMethod::Rhizome), black_box(5.0)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -388,5 +435,8 @@ criterion_group!(
     bench_stomata,
     bench_water,
     bench_nitrogen,
+    bench_herbivory,
+    bench_succession,
+    bench_reproduction,
 );
 criterion_main!(benches);

@@ -23,6 +23,9 @@
 //! | [`stomata`] | Ball-Berry stomatal conductance, transpiration, VPD, boundary layer |
 //! | [`phenology`] | Growing degree days, chilling hours, lifecycle event triggers |
 //! | [`nitrogen`] | Soil N pools, mineralization, uptake, leaching, N stress |
+//! | [`herbivory`] | Grazing/browsing biomass removal, compensatory growth |
+//! | [`succession`] | Pioneer/climax dynamics, shade tolerance, establishment |
+//! | [`reproduction`] | Vegetative reproduction — runners, rhizomes, clonal spread |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
 //! | [`bridge`] | Cross-crate conversions for badal, ushma, jantu |
 //! | [`error`] | Error types |
@@ -52,6 +55,7 @@ pub mod dispersal;
 pub mod ecosystem;
 pub mod error;
 pub mod growth;
+pub mod herbivory;
 /// Integration APIs for downstream consumers (soorat rendering).
 pub mod integration;
 pub mod mortality;
@@ -59,9 +63,11 @@ pub mod nitrogen;
 pub mod phenology;
 pub mod photosynthesis;
 pub mod pollination;
+pub mod reproduction;
 pub mod root;
 pub mod season;
 pub mod stomata;
+pub mod succession;
 pub mod water;
 
 #[cfg(feature = "logging")]
@@ -137,6 +143,24 @@ pub use nitrogen::{
     plant_n_demand,
 };
 
+// Herbivory
+pub use herbivory::{
+    HerbivoryType, biomass_removal, compensatory_growth_factor, herbivory_mortality,
+    organ_vulnerability, total_biomass_removed,
+};
+
+// Succession
+pub use succession::{
+    SuccessionalStage, competitive_displacement, effective_growth_multiplier,
+    establishment_probability, max_growth_rate_multiplier, shade_tolerance, typical_lifespan_years,
+};
+
+// Reproduction (vegetative)
+pub use reproduction::{
+    VegetativeMethod, base_ramet_rate, clonal_area_m2, parent_cost_kg, ramet_cost_fraction,
+    resource_limited_ramets, spread_distance_m,
+};
+
 // Ecosystem
 pub use ecosystem::{competition_growth, net_primary_productivity, shannon_diversity};
 
@@ -144,7 +168,8 @@ pub use ecosystem::{competition_growth, net_primary_productivity, shannon_divers
 pub use bridge::{
     atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score, evapotranspiration_cooling,
     frost_risk_to_mortality, frost_to_dormancy, growing_conditions_to_growth_multiplier,
-    humidity_to_vpd, nitrogen_to_growth_stress, rainfall_to_water_supply, seed_production_to_food,
+    herbivore_to_biomass_loss, humidity_to_vpd, light_to_successional_advantage,
+    nitrogen_to_growth_stress, rainfall_to_water_supply, seed_production_to_food,
     soil_temperature_to_growth_factor, soil_temperature_to_root_activity,
     soil_water_to_growth_stress, soil_water_to_photosynthesis_stress, solar_to_par,
     wet_bulb_to_heat_stress, wind_to_boundary_conductance, wind_to_dispersal_speed,

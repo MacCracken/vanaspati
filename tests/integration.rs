@@ -655,3 +655,151 @@ fn bridge_nitrogen_stress_matches_direct() {
     let direct = nitrogen_stress_factor(plant_n, critical);
     assert!((bridge - direct).abs() < 0.01);
 }
+
+// --- Herbivory integration tests ---
+
+#[test]
+fn herbivory_reduces_biomass_pool() {
+    use vanaspati::{BiomassPool, HerbivoryType, biomass_removal, compensatory_growth_factor};
+
+    let mut oak = BiomassPool::oak();
+    let initial_leaf = oak.leaf_kg;
+
+    // Moderate grazing
+    let (dl, ds, dr, drp) = biomass_removal(
+        oak.leaf_kg,
+        oak.stem_kg,
+        oak.root_kg,
+        oak.reproductive_kg,
+        HerbivoryType::Grazing,
+        0.4,
+    );
+    oak.leaf_kg -= dl;
+    oak.stem_kg -= ds;
+    oak.root_kg -= dr;
+    oak.reproductive_kg -= drp;
+
+    assert!(oak.leaf_kg < initial_leaf, "grazing should reduce leaves");
+    assert!(oak.total_kg() < BiomassPool::oak().total_kg());
+
+    // Check compensatory response
+    let defoliation = dl / initial_leaf;
+    let comp = compensatory_growth_factor(defoliation, 0.15); // tree = low compensation
+    assert!(
+        comp > 0.8,
+        "moderate defoliation should allow some regrowth, got {comp}"
+    );
+}
+
+#[test]
+fn herbivory_mortality_pipeline() {
+    use vanaspati::herbivory_mortality;
+
+    // At severe defoliation (80%), test vulnerability differences
+    let defol_frac = 0.85;
+    let grass_mort = herbivory_mortality(defol_frac, 0.1); // grass: low vulnerability
+    let seedling_mort = herbivory_mortality(defol_frac, 1.0); // seedling: high vulnerability
+    assert!(
+        grass_mort < seedling_mort,
+        "grass more resilient: g={grass_mort}, s={seedling_mort}"
+    );
+    assert!(
+        seedling_mort > 0.2,
+        "seedling should face real mortality at 85%"
+    );
+}
+
+// --- Succession integration tests ---
+
+#[test]
+fn succession_canopy_closure_shifts_advantage() {
+    use vanaspati::{
+        SuccessionalStage, effective_growth_multiplier, establishment_probability,
+        understory_light_fraction,
+    };
+
+    // Open field: LAI=0 → full light
+    let open_light = understory_light_fraction(0.0, 0.5);
+    let pioneer_open = effective_growth_multiplier(open_light, SuccessionalStage::Pioneer);
+    let climax_open = effective_growth_multiplier(open_light, SuccessionalStage::Climax);
+    assert!(pioneer_open > climax_open, "pioneer dominates open field");
+
+    // Dense forest: LAI=6 → very low light
+    let dense_light = understory_light_fraction(6.0, 0.5);
+    let pioneer_dense = effective_growth_multiplier(dense_light, SuccessionalStage::Pioneer);
+    let climax_dense = effective_growth_multiplier(dense_light, SuccessionalStage::Climax);
+    assert!(
+        climax_dense > pioneer_dense,
+        "climax dominates dense forest"
+    );
+
+    // Pioneer can't establish in dense shade
+    let pioneer_est = establishment_probability(dense_light, SuccessionalStage::Pioneer);
+    assert_eq!(
+        pioneer_est, 0.0,
+        "pioneer can't establish under dense canopy"
+    );
+
+    // Climax can establish in moderate shade
+    let mid_light = understory_light_fraction(3.0, 0.5);
+    let climax_est = establishment_probability(mid_light, SuccessionalStage::Climax);
+    assert!(climax_est > 0.0, "climax establishes under moderate canopy");
+}
+
+// --- Vegetative reproduction integration tests ---
+
+#[test]
+fn vegetative_spread_with_resource_limitation() {
+    use vanaspati::{
+        VegetativeMethod, clonal_area_m2, parent_cost_kg, resource_limited_ramets,
+        water_stress_growth_factor,
+    };
+
+    // Well-watered bamboo grove
+    let water_stress = water_stress_growth_factor(0.9); // well watered
+    let n_stress = 0.8; // moderate N
+    let ramets = resource_limited_ramets(VegetativeMethod::Rhizome, water_stress, n_stress);
+    assert!(ramets > 10.0, "bamboo should produce many ramets");
+
+    // After 5 years of spread
+    let area = clonal_area_m2(VegetativeMethod::Rhizome, 5.0);
+    assert!(area > 500.0, "5-year rhizome spread should cover >500m²");
+
+    // Cost to parent
+    let bamboo_biomass = 150.0; // kg
+    let cost = parent_cost_kg(bamboo_biomass, VegetativeMethod::Rhizome, ramets);
+    assert!(
+        cost < bamboo_biomass * 0.5,
+        "shouldn't cost more than half the parent"
+    );
+
+    // Drought suppresses reproduction
+    let drought_stress = water_stress_growth_factor(0.2);
+    let drought_ramets =
+        resource_limited_ramets(VegetativeMethod::Rhizome, drought_stress, n_stress);
+    assert!(
+        drought_ramets < ramets,
+        "drought should reduce ramet production"
+    );
+}
+
+// --- Bridge integration tests ---
+
+#[test]
+fn bridge_herbivore_to_biomass_matches_direct() {
+    use vanaspati::{HerbivoryType, herbivore_to_biomass_loss, total_biomass_removed};
+
+    let bridge = herbivore_to_biomass_loss(50.0, 100.0, 30.0, 10.0, 0.5, false);
+    let direct = total_biomass_removed(50.0, 100.0, 30.0, 10.0, HerbivoryType::Grazing, 0.5);
+    assert!((bridge - direct).abs() < 0.01);
+}
+
+#[test]
+fn bridge_successional_advantage_crossover() {
+    use vanaspati::light_to_successional_advantage;
+
+    let open = light_to_successional_advantage(0.9);
+    let shade = light_to_successional_advantage(0.15);
+    assert!(open < 1.0, "open → pioneer advantage");
+    assert!(shade > 1.0, "shade → climax advantage");
+}

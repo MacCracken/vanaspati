@@ -28,9 +28,9 @@ Vanaspati does NOT own:
 - [ ] Mycorrhizal network (plant-fungal nutrient exchange)
 - [ ] Allelopathy (chemical competition between plants)
 - [ ] Fire ecology (fire-adapted species, post-fire regeneration)
-- [ ] **Herbivory pressure** — grazing/browsing biomass removal
-- [ ] **Vegetative reproduction** — runners, rhizomes, root sprouting (clonal spread)
-- [ ] **Succession dynamics** — pioneer vs. climax species, shade tolerance, lifespan classes
+- [x] **Herbivory pressure** — grazing/browsing biomass removal
+- [x] **Vegetative reproduction** — runners, rhizomes, root sprouting (clonal spread)
+- [x] **Succession dynamics** — pioneer vs. climax species, shade tolerance, lifespan classes
 - [ ] Remaining mortality types — fire, disease, windthrow
 
 ---
