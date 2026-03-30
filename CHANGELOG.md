@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **stomata** — Ball-Berry stomatal conductance model (`ball_berry_conductance`), `saturation_vapor_pressure` (Magnus-Tetens), `vapor_pressure_deficit`, `transpiration_rate`, `instantaneous_wue`, `drought_stomatal_factor` (anisohydric/isohydric), `vpd_stomatal_factor`, `boundary_layer_conductance` (Jones 2014), `total_leaf_conductance` (series resistance), `StomatalBehavior` enum
+- **bridge** — added pravash bridges: `wind_to_boundary_conductance`, `humidity_to_vpd`
 - **phenology** — `PhenologicalEvent` enum (DormancyBreak, BudBreak, LeafOut, Flowering, FruitSet, LeafSenescence, DormancyOnset), `growing_degree_days` and `accumulated_gdd` heat sum accumulation, `gdd_threshold` with literature values for temperate deciduous trees, `event_reached` and `phenological_progress`, `chilling_contribution` and `accumulated_chill` (Utah model, 0–7.2°C), `dormancy_broken`, `senescence_triggered` (photoperiod + temperature), `dormancy_onset_triggered` (short days or frost), `event_to_growth_stage` mapping
 - **growth** — `growth_stage(height, max_height)` maps height fraction to lifecycle stage
 

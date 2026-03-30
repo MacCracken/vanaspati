@@ -2,15 +2,16 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
     AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhenologicalEvent,
     PhotosynthesisPathway, PollinationMethod, RootSystem, Season, accumulated_gdd,
-    age_mortality_rate, allocate, canopy_to_habitat_score, competition_growth,
-    daily_decomposition_rate, daylight_hours_at, dispersal_distance, dispersal_probability,
-    drought_mortality, event_reached, frost_mortality, frost_risk_to_mortality,
-    growing_conditions_to_growth_multiplier, growing_degree_days, growth_modifier_at, growth_stage,
-    height_to_diameter, height_to_leaf_area, net_primary_productivity, nitrogen_release,
-    pathway_params, phenological_progress, photosynthesis_rate, pollination_probability,
-    remaining_mass, self_thinning_mortality, shannon_diversity, soil_temperature_to_root_activity,
-    solar_to_par, temperature_factor, temperature_factor_c4, temperature_factor_cam,
-    wind_to_dispersal_speed,
+    age_mortality_rate, allocate, ball_berry_conductance, canopy_to_habitat_score,
+    competition_growth, daily_decomposition_rate, daylight_hours_at, dispersal_distance,
+    dispersal_probability, drought_mortality, event_reached, frost_mortality,
+    frost_risk_to_mortality, growing_conditions_to_growth_multiplier, growing_degree_days,
+    growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
+    net_primary_productivity, nitrogen_release, pathway_params, phenological_progress,
+    photosynthesis_rate, pollination_probability, remaining_mass, self_thinning_mortality,
+    shannon_diversity, soil_temperature_to_root_activity, solar_to_par, temperature_factor,
+    temperature_factor_c4, temperature_factor_cam, total_leaf_conductance, transpiration_rate,
+    vapor_pressure_deficit, wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -270,6 +271,29 @@ fn bench_phenology(c: &mut Criterion) {
     });
 }
 
+fn bench_stomata(c: &mut Criterion) {
+    c.bench_function("ball_berry_conductance", |b| {
+        b.iter(|| {
+            ball_berry_conductance(
+                black_box(0.02),
+                black_box(9.0),
+                black_box(15.0),
+                black_box(0.7),
+                black_box(400.0),
+            )
+        })
+    });
+    c.bench_function("transpiration_rate", |b| {
+        b.iter(|| transpiration_rate(black_box(0.25), black_box(1.5), black_box(101.3)))
+    });
+    c.bench_function("vapor_pressure_deficit", |b| {
+        b.iter(|| vapor_pressure_deficit(black_box(2.338), black_box(1.5)))
+    });
+    c.bench_function("total_leaf_conductance", |b| {
+        b.iter(|| total_leaf_conductance(black_box(0.25), black_box(0.9)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -284,5 +308,6 @@ criterion_group!(
     bench_bridge,
     bench_decomposition,
     bench_phenology,
+    bench_stomata,
 );
 criterion_main!(benches);

@@ -23,8 +23,6 @@ Vanaspati does NOT own:
 
 - [ ] **Water/soil moisture system** — precipitation, soil water storage, root uptake, drought stress on growth/photosynthesis. Single biggest missing piece — water is the primary limiting factor for plant growth in most terrestrial ecosystems
 - [ ] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
-- [ ] **Stomatal conductance** — Ball-Berry model coupling photosynthesis, water loss, and temperature
-
 ### Medium Priority
 
 - [ ] Mycorrhizal network (plant-fungal nutrient exchange)
@@ -66,7 +64,8 @@ Vanaspati does NOT own:
 - **season** — latitude-parameterized: daylight_hours_at (sunrise equation), growth_modifier_at, from_day_latitude (hemisphere-aware)
 - **decomposition** — LitterType enum, Q10 temperature factor, moisture bell curve, exponential decay, nitrogen release with C:N ratio, half-life
 - **phenology** — PhenologicalEvent enum, GDD accumulation, chilling hours (Utah model), event thresholds, dormancy break, senescence/dormancy triggers, event_to_growth_stage mapping
-- **bridge** — 13 cross-crate functions: badal (solar→PAR, weather→growth, frost→dormancy, wind→dispersal), ushma (soil temp→root activity, ET cooling, wet bulb stress), jantu (canopy→habitat, seeds→food)
+- **stomata** — Ball-Berry conductance, VPD, transpiration, drought/VPD factors, boundary layer, total leaf conductance
+- **bridge** — 15 cross-crate functions: badal (solar→PAR, weather→growth, frost→dormancy, wind→dispersal), ushma (soil temp→root activity, ET cooling, wet bulb stress), pravash (wind→boundary conductance, humidity→VPD), jantu (canopy→habitat, seeds→food)
 - **integration/soorat** — feature-gated visualization: GrowthVisualization, RootVisualization, EcosystemMap, SeasonalColor
 
 ---

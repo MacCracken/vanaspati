@@ -1,15 +1,17 @@
 use vanaspati::{
     AllocationStrategy, BiomassPool, DispersalMethod, GrowthModel, MortalityCause,
     PhotosynthesisPathway, PollinationMethod, RootSystem, RootType, Season, SeedProfile,
-    age_mortality_rate, allocate, atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score,
-    competition_growth, daylight_hours_at, dispersal_distance, dispersal_probability,
-    drought_mortality, evapotranspiration_cooling, frost_mortality, frost_risk_to_mortality,
+    StomatalBehavior, age_mortality_rate, allocate, atmosphere_to_photosynthesis_inputs,
+    ball_berry_conductance, canopy_to_habitat_score, competition_growth, daylight_hours_at,
+    dispersal_distance, dispersal_probability, drought_mortality, drought_stomatal_factor,
+    evapotranspiration_cooling, frost_mortality, frost_risk_to_mortality,
     growing_conditions_to_growth_multiplier, growth_modifier_at, height_to_diameter,
-    height_to_leaf_area, light_compensation_point, net_primary_productivity, pathway_params,
-    photosynthesis_rate, pollination_probability, rainfall_to_water_supply,
-    seed_production_to_food, self_thinning_mortality, shannon_diversity,
-    soil_temperature_to_root_activity, temperature_factor, temperature_factor_c4,
-    temperature_factor_cam, water_use_efficiency, wind_to_dispersal_speed,
+    height_to_leaf_area, humidity_to_vpd, instantaneous_wue, light_compensation_point,
+    net_primary_productivity, pathway_params, photosynthesis_rate, pollination_probability,
+    rainfall_to_water_supply, saturation_vapor_pressure, seed_production_to_food,
+    self_thinning_mortality, shannon_diversity, soil_temperature_to_root_activity,
+    temperature_factor, temperature_factor_c4, temperature_factor_cam, transpiration_rate,
+    vapor_pressure_deficit, water_use_efficiency, wind_to_dispersal_speed,
 };
 
 // --- V0.1.0 integration tests ---
@@ -328,4 +330,56 @@ fn wood_persists_longer_than_leaves() {
         wood_half > leaf_half * 5.0,
         "wood should persist much longer than leaves"
     );
+}
+
+// --- Stomatal conductance integration tests ---
+
+#[test]
+fn stomata_full_pipeline() {
+    // Weather → VPD → Ball-Berry → transpiration → WUE
+    let temp = 25.0_f32;
+    let es = saturation_vapor_pressure(temp);
+    let ea = es * 0.6; // 60% RH
+    let vpd = vapor_pressure_deficit(es, ea);
+    assert!(vpd > 0.0);
+
+    // Photosynthesis drives stomatal opening
+    let a = photosynthesis_rate(20.0, 0.05, 800.0);
+    let gs = ball_berry_conductance(0.02, 9.0, a, 0.6, 400.0);
+    assert!(gs > 0.02, "stomata should open with photosynthesis");
+
+    // Transpiration from conductance and VPD
+    let e = transpiration_rate(gs, vpd, 101.3);
+    assert!(e > 0.0, "should transpire water");
+
+    // Water use efficiency
+    let wue = instantaneous_wue(a, e);
+    assert!(
+        wue > 2.0 && wue < 10.0,
+        "WUE should be realistic, got {wue}"
+    );
+}
+
+#[test]
+fn stomata_drought_reduces_transpiration() {
+    let gs_wet = ball_berry_conductance(0.02, 9.0, 15.0, 0.7, 400.0);
+    let drought_factor = drought_stomatal_factor(0.20, 0.15, 0.35, StomatalBehavior::Isohydric);
+    let gs_dry = gs_wet * drought_factor;
+    assert!(gs_dry < gs_wet, "drought should reduce conductance");
+
+    let vpd = 1.5;
+    let e_wet = transpiration_rate(gs_wet, vpd, 101.3);
+    let e_dry = transpiration_rate(gs_dry, vpd, 101.3);
+    assert!(e_dry < e_wet, "drought should reduce transpiration");
+}
+
+#[test]
+fn bridge_humidity_to_stomatal_pipeline() {
+    // badal humidity → bridge VPD → stomatal transpiration
+    let vpd = humidity_to_vpd(30.0, 0.4); // hot dry: 30°C, 40% RH
+    assert!(vpd > 2.0, "hot dry air should produce high VPD");
+
+    let gs = ball_berry_conductance(0.02, 9.0, 15.0, 0.4, 400.0);
+    let e = transpiration_rate(gs, vpd, 101.3);
+    assert!(e > 0.0);
 }

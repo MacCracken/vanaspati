@@ -19,6 +19,7 @@
 //! | [`biomass`] | Carbon allocation across plant organs, allometric scaling |
 //! | [`mortality`] | Age, drought, frost, competition mortality models |
 //! | [`decomposition`] | Litter decay, temperature/moisture factors, nutrient release |
+//! | [`stomata`] | Ball-Berry stomatal conductance, transpiration, VPD, boundary layer |
 //! | [`phenology`] | Growing degree days, chilling hours, lifecycle event triggers |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
 //! | [`bridge`] | Cross-crate conversions for badal, ushma, jantu |
@@ -57,6 +58,7 @@ pub mod photosynthesis;
 pub mod pollination;
 pub mod root;
 pub mod season;
+pub mod stomata;
 
 #[cfg(feature = "logging")]
 pub mod logging;
@@ -96,6 +98,13 @@ pub use mortality::{
     MortalityCause, age_mortality_rate, drought_mortality, frost_mortality, self_thinning_mortality,
 };
 
+// Stomata
+pub use stomata::{
+    StomatalBehavior, ball_berry_conductance, boundary_layer_conductance, drought_stomatal_factor,
+    instantaneous_wue, saturation_vapor_pressure, total_leaf_conductance, transpiration_rate,
+    vapor_pressure_deficit, vpd_stomatal_factor,
+};
+
 // Phenology
 pub use phenology::{
     PhenologicalEvent, accumulated_chill, accumulated_gdd, chilling_contribution, dormancy_broken,
@@ -117,7 +126,7 @@ pub use ecosystem::{competition_growth, net_primary_productivity, shannon_divers
 pub use bridge::{
     atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score, evapotranspiration_cooling,
     frost_risk_to_mortality, frost_to_dormancy, growing_conditions_to_growth_multiplier,
-    rainfall_to_water_supply, seed_production_to_food, soil_temperature_to_growth_factor,
-    soil_temperature_to_root_activity, solar_to_par, wet_bulb_to_heat_stress,
-    wind_to_dispersal_speed,
+    humidity_to_vpd, rainfall_to_water_supply, seed_production_to_food,
+    soil_temperature_to_growth_factor, soil_temperature_to_root_activity, solar_to_par,
+    wet_bulb_to_heat_stress, wind_to_boundary_conductance, wind_to_dispersal_speed,
 };

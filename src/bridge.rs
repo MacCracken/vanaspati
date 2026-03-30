@@ -301,6 +301,48 @@ pub fn wet_bulb_to_heat_stress(wet_bulb_k: f64) -> f32 {
     stress as f32
 }
 
+// ── Pravash bridges (fluid dynamics) ──────────────────────────────────
+
+/// Convert wind speed to leaf boundary layer conductance (mol H₂O/m²/s).
+///
+/// Wraps `stomata::boundary_layer_conductance` for use with pravash/badal
+/// wind speed outputs.
+///
+/// Connects to: `boundary_layer_conductance(wind, leaf_width)` → `total_leaf_conductance()`
+///
+/// - `wind_speed_ms` — wind at canopy height (m/s)
+/// - `leaf_width_m` — characteristic leaf dimension (meters)
+#[must_use]
+#[inline]
+pub fn wind_to_boundary_conductance(wind_speed_ms: f64, leaf_width_m: f64) -> f32 {
+    crate::stomata::boundary_layer_conductance(wind_speed_ms as f32, leaf_width_m as f32)
+}
+
+/// Convert atmospheric humidity to stomatal VPD (kPa).
+///
+/// Computes VPD from air temperature and relative humidity — the driving
+/// force for transpiration through stomata.
+///
+/// Connects to: `vapor_pressure_deficit()` → `transpiration_rate()`
+///
+/// - `temperature_celsius` — air temperature (°C)
+/// - `relative_humidity_fraction` — RH (0.0–1.0)
+#[must_use]
+pub fn humidity_to_vpd(temperature_celsius: f64, relative_humidity_fraction: f64) -> f32 {
+    let es = crate::stomata::saturation_vapor_pressure(temperature_celsius as f32);
+    let ea = es * (relative_humidity_fraction as f32).clamp(0.0, 1.0);
+    let vpd = crate::stomata::vapor_pressure_deficit(es, ea);
+    tracing::trace!(
+        temperature_celsius,
+        relative_humidity_fraction,
+        es,
+        ea,
+        vpd,
+        "humidity_to_vpd"
+    );
+    vpd
+}
+
 // ── Jantu bridges (creature behavior) ─────────────────────────────────
 
 /// Canopy leaf area index to habitat cover score (0.0–1.0).
@@ -554,6 +596,38 @@ mod tests {
     fn wet_bulb_onset() {
         let s = wet_bulb_to_heat_stress(301.15); // 28°C
         assert!(s < 0.01, "at onset, stress should be ~0, got {s}");
+    }
+
+    // ── Pravash bridge tests ───────────────────────────────────────────
+
+    #[test]
+    fn wind_boundary_conductance_basic() {
+        let gb = wind_to_boundary_conductance(2.0, 0.05);
+        assert!(gb > 0.5 && gb < 1.5, "got {gb}");
+    }
+
+    #[test]
+    fn wind_boundary_conductance_zero_wind() {
+        assert_eq!(wind_to_boundary_conductance(0.0, 0.05), 0.0);
+    }
+
+    #[test]
+    fn humidity_to_vpd_dry() {
+        let vpd = humidity_to_vpd(25.0, 0.3); // 30% RH at 25°C
+        assert!(vpd > 1.5, "dry air should produce high VPD, got {vpd}");
+    }
+
+    #[test]
+    fn humidity_to_vpd_saturated() {
+        let vpd = humidity_to_vpd(25.0, 1.0); // 100% RH
+        assert!(vpd < 0.01, "saturated air should have ~0 VPD, got {vpd}");
+    }
+
+    #[test]
+    fn humidity_to_vpd_increases_with_dryness() {
+        let humid = humidity_to_vpd(25.0, 0.8);
+        let dry = humidity_to_vpd(25.0, 0.3);
+        assert!(dry > humid);
     }
 
     // ── Jantu bridge tests ────────────────────────────────────────────
