@@ -493,3 +493,256 @@ test soil_water_new_loam ... bench:           3 ns/iter (+/- 0)
 test saturated_conductivity ... bench:           3 ns/iter (+/- 0)
 
 test infiltration_rate ... bench:           9 ns/iter (+/- 0)
+
+test soil_evaporation ... bench:           5 ns/iter (+/- 0)
+
+test daily_water_balance ... bench:          31 ns/iter (+/- 0)
+
+test growth_oak_height_at_day ... bench:           5 ns/iter (+/- 0)
+
+test growth_bamboo_height_at_day ... bench:           9 ns/iter (+/- 0)
+
+test growth_oak_daily_growth ... bench:           3 ns/iter (+/- 0)
+
+test growth_stage ... bench:           3 ns/iter (+/- 0)
+
+test photosynthesis_rate ... bench:           9 ns/iter (+/- 1)
+
+test temperature_factor ... bench:           4 ns/iter (+/- 0)
+
+test temperature_factor_c4 ... bench:           4 ns/iter (+/- 0)
+
+test temperature_factor_cam ... bench:           5 ns/iter (+/- 1)
+
+test pathway_params ... bench:           7 ns/iter (+/- 0)
+
+test canopy_light_at_depth ... bench:           4 ns/iter (+/- 0)
+
+test shaded_photosynthesis_rate ... bench:          12 ns/iter (+/- 0)
+
+test season_from_day ... bench:           2 ns/iter (+/- 0)
+
+test season_growth_modifier ... bench:           0 ns/iter (+/- 0)
+
+test season_daylight_hours ... bench:           0 ns/iter (+/- 0)
+
+test daylight_hours_at_45n ... bench:          35 ns/iter (+/- 0)
+
+test daylight_hours_at_equator ... bench:          26 ns/iter (+/- 0)
+
+test growth_modifier_at_45n ... bench:          38 ns/iter (+/- 3)
+
+test from_day_latitude_south ... bench:           2 ns/iter (+/- 0)
+
+test root_stabilization_factor ... bench:           2 ns/iter (+/- 0)
+
+test pollination_probability_insect ... bench:           4 ns/iter (+/- 0)
+
+test pollination_probability_self ... bench:           2 ns/iter (+/- 0)
+
+test dispersal_distance_wind ... bench:          10 ns/iter (+/- 0)
+
+test dispersal_distance_gravity ... bench:           3 ns/iter (+/- 0)
+
+test dispersal_probability_wind ... bench:           7 ns/iter (+/- 1)
+
+test dispersal_probability_animal ... bench:           5 ns/iter (+/- 0)
+
+test allocate_balanced ... bench:           3 ns/iter (+/- 0)
+
+test allocate_stressed_root ... bench:           3 ns/iter (+/- 0)
+
+test height_to_diameter ... bench:           8 ns/iter (+/- 0)
+
+test height_to_leaf_area ... bench:           7 ns/iter (+/- 0)
+
+test age_mortality_rate ... bench:           3 ns/iter (+/- 0)
+
+test self_thinning_mortality ... bench:          16 ns/iter (+/- 3)
+
+test frost_mortality ... bench:           7 ns/iter (+/- 1)
+
+test drought_mortality ... bench:           2 ns/iter (+/- 0)
+
+test competition_growth ... bench:           4 ns/iter (+/- 2)
+
+test shannon_diversity_4sp ... bench:          17 ns/iter (+/- 4)
+
+test shannon_diversity_20sp ... bench:          73 ns/iter (+/- 2)
+
+test net_primary_productivity ... bench:           2 ns/iter (+/- 0)
+
+test bridge_solar_to_par ... bench:           1 ns/iter (+/- 0)
+
+test bridge_growing_conditions ... bench:          49 ns/iter (+/- 11)
+
+test bridge_soil_root_activity ... bench:           5 ns/iter (+/- 3)
+
+test bridge_frost_risk_mortality ... bench:           8 ns/iter (+/- 2)
+
+test bridge_canopy_habitat ... bench:           6 ns/iter (+/- 4)
+
+test bridge_wind_dispersal ... bench:          15 ns/iter (+/- 3)
+
+test daily_decomposition_rate ... bench:          12 ns/iter (+/- 2)
+
+test remaining_mass ... bench:           4 ns/iter (+/- 1)
+
+test nitrogen_release ... bench:           2 ns/iter (+/- 0)
+
+test growing_degree_days ... bench:           1 ns/iter (+/- 0)
+
+test accumulated_gdd_365 ... bench:         285 ns/iter (+/- 67)
+
+test event_reached ... bench:           2 ns/iter (+/- 1)
+
+test phenological_progress ... bench:           3 ns/iter (+/- 0)
+
+test ball_berry_conductance ... bench:           3 ns/iter (+/- 1)
+
+test transpiration_rate ... bench:           2 ns/iter (+/- 0)
+
+test vapor_pressure_deficit ... bench:           1 ns/iter (+/- 0)
+
+test total_leaf_conductance ... bench:           2 ns/iter (+/- 1)
+
+test soil_water_new_loam ... bench:           3 ns/iter (+/- 0)
+
+test saturated_conductivity ... bench:           1 ns/iter (+/- 0)
+
+test infiltration_rate ... bench:           6 ns/iter (+/- 2)
+
+test soil_evaporation ... bench:           3 ns/iter (+/- 1)
+
+test daily_water_balance ... bench:          21 ns/iter (+/- 0)
+
+test root_water_uptake_mm ... bench:           4 ns/iter (+/- 0)
+
+test water_stress_factor ... bench:           1 ns/iter (+/- 0)
+
+test water_stress_growth_factor ... bench:           1 ns/iter (+/- 0)
+
+test growth_oak_height_at_day ... bench:           5 ns/iter (+/- 1)
+
+test growth_bamboo_height_at_day ... bench:           5 ns/iter (+/- 0)
+
+test growth_oak_daily_growth ... bench:           1 ns/iter (+/- 0)
+
+test growth_stage ... bench:           3 ns/iter (+/- 0)
+
+test photosynthesis_rate ... bench:           6 ns/iter (+/- 0)
+
+test temperature_factor ... bench:           5 ns/iter (+/- 0)
+
+test temperature_factor_c4 ... bench:           4 ns/iter (+/- 0)
+
+test temperature_factor_cam ... bench:           4 ns/iter (+/- 0)
+
+test pathway_params ... bench:           7 ns/iter (+/- 0)
+
+test canopy_light_at_depth ... bench:           4 ns/iter (+/- 1)
+
+test shaded_photosynthesis_rate ... bench:          13 ns/iter (+/- 3)
+
+test season_from_day ... bench:           2 ns/iter (+/- 0)
+
+test season_growth_modifier ... bench:           0 ns/iter (+/- 0)
+
+test season_daylight_hours ... bench:           0 ns/iter (+/- 0)
+
+test daylight_hours_at_45n ... bench:          34 ns/iter (+/- 1)
+
+test daylight_hours_at_equator ... bench:          26 ns/iter (+/- 5)
+
+test growth_modifier_at_45n ... bench:          39 ns/iter (+/- 8)
+
+test from_day_latitude_south ... bench:           2 ns/iter (+/- 1)
+
+test root_stabilization_factor ... bench:           1 ns/iter (+/- 0)
+
+test pollination_probability_insect ... bench:           3 ns/iter (+/- 0)
+
+test pollination_probability_self ... bench:           2 ns/iter (+/- 0)
+
+test dispersal_distance_wind ... bench:          14 ns/iter (+/- 3)
+
+test dispersal_distance_gravity ... bench:           3 ns/iter (+/- 1)
+
+test dispersal_probability_wind ... bench:           5 ns/iter (+/- 1)
+
+test dispersal_probability_animal ... bench:           5 ns/iter (+/- 0)
+
+test allocate_balanced ... bench:           3 ns/iter (+/- 0)
+
+test allocate_stressed_root ... bench:           3 ns/iter (+/- 0)
+
+test height_to_diameter ... bench:           7 ns/iter (+/- 2)
+
+test height_to_leaf_area ... bench:           8 ns/iter (+/- 1)
+
+test age_mortality_rate ... bench:           3 ns/iter (+/- 0)
+
+test self_thinning_mortality ... bench:           9 ns/iter (+/- 0)
+
+test frost_mortality ... bench:           6 ns/iter (+/- 0)
+
+test drought_mortality ... bench:           2 ns/iter (+/- 0)
+
+test competition_growth ... bench:           3 ns/iter (+/- 0)
+
+test shannon_diversity_4sp ... bench:          15 ns/iter (+/- 0)
+
+test shannon_diversity_20sp ... bench:          66 ns/iter (+/- 1)
+
+test net_primary_productivity ... bench:           2 ns/iter (+/- 0)
+
+test bridge_solar_to_par ... bench:           1 ns/iter (+/- 0)
+
+test bridge_growing_conditions ... bench:          45 ns/iter (+/- 1)
+
+test bridge_soil_root_activity ... bench:           5 ns/iter (+/- 0)
+
+test bridge_frost_risk_mortality ... bench:           7 ns/iter (+/- 0)
+
+test bridge_canopy_habitat ... bench:           5 ns/iter (+/- 0)
+
+test bridge_wind_dispersal ... bench:          14 ns/iter (+/- 0)
+
+test daily_decomposition_rate ... bench:          12 ns/iter (+/- 0)
+
+test remaining_mass ... bench:           4 ns/iter (+/- 0)
+
+test nitrogen_release ... bench:           2 ns/iter (+/- 0)
+
+test growing_degree_days ... bench:           1 ns/iter (+/- 0)
+
+test accumulated_gdd_365 ... bench:         271 ns/iter (+/- 1)
+
+test event_reached ... bench:           2 ns/iter (+/- 0)
+
+test phenological_progress ... bench:           3 ns/iter (+/- 0)
+
+test ball_berry_conductance ... bench:           3 ns/iter (+/- 0)
+
+test transpiration_rate ... bench:           2 ns/iter (+/- 0)
+
+test vapor_pressure_deficit ... bench:           1 ns/iter (+/- 0)
+
+test total_leaf_conductance ... bench:           2 ns/iter (+/- 0)
+
+test soil_water_new_loam ... bench:           3 ns/iter (+/- 0)
+
+test saturated_conductivity ... bench:           2 ns/iter (+/- 0)
+
+test infiltration_rate ... bench:           6 ns/iter (+/- 0)
+
+test soil_evaporation ... bench:           3 ns/iter (+/- 0)
+
+test daily_water_balance ... bench:          22 ns/iter (+/- 1)
+
+test root_water_uptake_mm ... bench:           4 ns/iter (+/- 0)
+
+test water_stress_factor ... bench:           1 ns/iter (+/- 0)
+
+test water_stress_growth_factor ... bench:           1 ns/iter (+/- 0)
+

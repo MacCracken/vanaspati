@@ -114,6 +114,29 @@ impl GrowthModel {
     }
 }
 
+/// Water stress factor on growth (0.0–1.0).
+///
+/// Growth is more sensitive to drought than photosynthesis — plants reduce
+/// growth allocation before photosynthetic capacity declines. Full growth
+/// above 60% relative water content, linear decline to zero at wilting.
+///
+/// `factor = min(1.0, RWC / 0.6)`
+///
+/// Based on Hsiao (1973) — cell expansion is the first process inhibited
+/// by water deficit, well before photosynthesis declines.
+///
+/// - `relative_water_content` — fraction of plant-available water (0.0–1.0)
+#[must_use]
+#[inline]
+pub fn water_stress_growth_factor(relative_water_content: f32) -> f32 {
+    if relative_water_content <= 0.0 {
+        return 0.0;
+    }
+    let factor = (relative_water_content / 0.6).clamp(0.0, 1.0);
+    tracing::trace!(relative_water_content, factor, "water_stress_growth_factor");
+    factor
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,6 +252,51 @@ mod tests {
     fn stage_clamped_above_max() {
         // height > max_height still returns Senescence (clamped to 1.0)
         assert_eq!(growth_stage(30.0, 25.0), GrowthStage::Senescence);
+    }
+
+    // --- water_stress_growth_factor tests ---
+
+    #[test]
+    fn growth_water_stress_full() {
+        assert_eq!(water_stress_growth_factor(1.0), 1.0);
+    }
+
+    #[test]
+    fn growth_water_stress_above_threshold() {
+        assert_eq!(water_stress_growth_factor(0.8), 1.0);
+    }
+
+    #[test]
+    fn growth_water_stress_at_threshold() {
+        assert!((water_stress_growth_factor(0.6) - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn growth_water_stress_half_threshold() {
+        assert!((water_stress_growth_factor(0.3) - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn growth_water_stress_wilted() {
+        assert_eq!(water_stress_growth_factor(0.0), 0.0);
+    }
+
+    #[test]
+    fn growth_water_stress_negative() {
+        assert_eq!(water_stress_growth_factor(-0.1), 0.0);
+    }
+
+    #[test]
+    fn growth_more_sensitive_than_photosynthesis() {
+        // At RWC=0.5, growth should be reduced but photosynthesis should not
+        let growth_f = water_stress_growth_factor(0.5);
+        assert!(growth_f < 1.0, "growth should be stressed at RWC=0.5");
+        // Photosynthesis threshold is 0.4, so at 0.5 it's still 1.0
+        let photo_f = crate::photosynthesis::water_stress_factor(0.5);
+        assert!(
+            growth_f < photo_f,
+            "growth should be more sensitive: growth={growth_f}, photo={photo_f}"
+        );
     }
 
     #[test]

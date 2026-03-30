@@ -69,13 +69,14 @@ pub mod logging;
 pub use error::{Result, VanaspatiError};
 
 // Growth
-pub use growth::{GrowthModel, GrowthStage, growth_stage};
+pub use growth::{GrowthModel, GrowthStage, growth_stage, water_stress_growth_factor};
 
 // Photosynthesis
 pub use photosynthesis::{
     PhotosynthesisPathway, canopy_light_at_depth, light_compensation_point, light_interception,
     pathway_params, photosynthesis_rate, shaded_photosynthesis_rate, temperature_factor,
-    temperature_factor_c4, temperature_factor_cam, understory_light_fraction, water_use_efficiency,
+    temperature_factor_c4, temperature_factor_cam, understory_light_fraction, water_stress_factor,
+    water_use_efficiency,
 };
 
 // Season
@@ -135,6 +136,7 @@ pub use bridge::{
     atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score, evapotranspiration_cooling,
     frost_risk_to_mortality, frost_to_dormancy, growing_conditions_to_growth_multiplier,
     humidity_to_vpd, rainfall_to_water_supply, seed_production_to_food,
-    soil_temperature_to_growth_factor, soil_temperature_to_root_activity, solar_to_par,
+    soil_temperature_to_growth_factor, soil_temperature_to_root_activity,
+    soil_water_to_growth_stress, soil_water_to_photosynthesis_stress, solar_to_par,
     wet_bulb_to_heat_stress, wind_to_boundary_conductance, wind_to_dispersal_speed,
 };

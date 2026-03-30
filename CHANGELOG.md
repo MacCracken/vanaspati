@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **water** — `SoilType` enum (Sand, SandyLoam, Loam, ClayLoam, Clay), `SoilWater` struct with hydraulic properties (Saxton & Rawls 2006), presets (sand, loam, clay), `add_water`/`remove_water`/`drain` state mutation, `relative_water_content`, `available_water_mm`, `deficit_mm`, `saturated_conductivity` (Rawls 1982), `infiltration_rate` (Green-Ampt), `soil_evaporation` (Philip stage-2), `WaterFluxes` summary struct, `daily_water_balance` combining rainfall→infiltration→drainage→transpiration→evaporation
+- **root** — `root_zone_fraction(soil_depth)` scales water access by root depth vs soil depth; `water_uptake_mm(soil, demand)` extracts water limited by root capacity, zone available water, and transpiration demand
+- **photosynthesis** — `water_stress_factor(rwc)` direct drought stress on photosynthesis (Sinclair & Ludlow 1986 threshold at RWC=0.4)
+- **growth** — `water_stress_growth_factor(rwc)` drought stress on growth (Hsiao 1973, threshold at RWC=0.6 — growth declines before photosynthesis); `growth_stage(height, max_height)` maps height fraction to lifecycle stage
+- **bridge** — `soil_water_to_photosynthesis_stress(rwc)` and `soil_water_to_growth_stress(rwc)` cross-crate water stress bridges; pravash bridges: `wind_to_boundary_conductance`, `humidity_to_vpd`
 - **stomata** — Ball-Berry stomatal conductance model (`ball_berry_conductance`), `saturation_vapor_pressure` (Magnus-Tetens), `vapor_pressure_deficit`, `transpiration_rate`, `instantaneous_wue`, `drought_stomatal_factor` (anisohydric/isohydric), `vpd_stomatal_factor`, `boundary_layer_conductance` (Jones 2014), `total_leaf_conductance` (series resistance), `StomatalBehavior` enum
-- **bridge** — added pravash bridges: `wind_to_boundary_conductance`, `humidity_to_vpd`
 - **phenology** — `PhenologicalEvent` enum (DormancyBreak, BudBreak, LeafOut, Flowering, FruitSet, LeafSenescence, DormancyOnset), `growing_degree_days` and `accumulated_gdd` heat sum accumulation, `gdd_threshold` with literature values for temperate deciduous trees, `event_reached` and `phenological_progress`, `chilling_contribution` and `accumulated_chill` (Utah model, 0–7.2°C), `dormancy_broken`, `senescence_triggered` (photoperiod + temperature), `dormancy_onset_triggered` (short days or frost), `event_to_growth_stage` mapping
-- **growth** — `growth_stage(height, max_height)` maps height fraction to lifecycle stage
 
 ### Fixed
 - **photosynthesis** — negative `quantum_yield` now returns 0 instead of negative rate

@@ -12,7 +12,7 @@ use vanaspati::{
     self_thinning_mortality, shannon_diversity, soil_evaporation,
     soil_temperature_to_root_activity, solar_to_par, temperature_factor, temperature_factor_c4,
     temperature_factor_cam, total_leaf_conductance, transpiration_rate, vapor_pressure_deficit,
-    wind_to_dispersal_speed,
+    water_stress_factor, water_stress_growth_factor, wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -321,6 +321,17 @@ fn bench_water(c: &mut Criterion) {
             soil.water_content_mm = soil.field_capacity_mm; // reset each iter
             daily_water_balance(&mut soil, black_box(10.0), black_box(3.0), black_box(2.0))
         })
+    });
+    c.bench_function("root_water_uptake_mm", |b| {
+        let oak = RootSystem::oak();
+        let soil = SoilWater::loam();
+        b.iter(|| oak.water_uptake_mm(black_box(&soil), black_box(5.0)))
+    });
+    c.bench_function("water_stress_factor", |b| {
+        b.iter(|| water_stress_factor(black_box(0.5)))
+    });
+    c.bench_function("water_stress_growth_factor", |b| {
+        b.iter(|| water_stress_growth_factor(black_box(0.5)))
     });
 }
 

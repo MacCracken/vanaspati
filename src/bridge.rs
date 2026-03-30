@@ -221,6 +221,34 @@ pub fn growing_conditions_to_growth_multiplier(
     multiplier
 }
 
+/// Water stress factor on photosynthesis from soil moisture (0.0–1.0).
+///
+/// Wraps `photosynthesis::water_stress_factor` for use with soil water state.
+/// Extracts relative water content from the soil and returns the stress factor.
+///
+/// Connects to: `photosynthesis_rate()` (multiply result by this)
+///
+/// - `relative_water_content` — soil RWC (0.0–1.0, from `SoilWater::relative_water_content()`)
+#[must_use]
+#[inline]
+pub fn soil_water_to_photosynthesis_stress(relative_water_content: f64) -> f32 {
+    crate::photosynthesis::water_stress_factor(relative_water_content as f32)
+}
+
+/// Water stress factor on growth from soil moisture (0.0–1.0).
+///
+/// Wraps `growth::water_stress_growth_factor` for use with soil water state.
+/// Growth is more sensitive to drought than photosynthesis (threshold 0.6 vs 0.4).
+///
+/// Connects to: `GrowthModel::daily_growth()` (multiply result by this)
+///
+/// - `relative_water_content` — soil RWC (0.0–1.0, from `SoilWater::relative_water_content()`)
+#[must_use]
+#[inline]
+pub fn soil_water_to_growth_stress(relative_water_content: f64) -> f32 {
+    crate::growth::water_stress_growth_factor(relative_water_content as f32)
+}
+
 // ── Ushma bridges (thermodynamics) ────────────────────────────────────
 
 /// Soil temperature to root activity scaling factor (0.0–1.0).
@@ -680,5 +708,42 @@ mod tests {
     #[test]
     fn seed_production_negative() {
         assert_eq!(seed_production_to_food(-1.0, 1.0), 0.0);
+    }
+
+    // ── Water stress bridge tests ────────────────────────────────────
+
+    #[test]
+    fn soil_water_photosynthesis_stress_wet() {
+        assert_eq!(soil_water_to_photosynthesis_stress(1.0), 1.0);
+    }
+
+    #[test]
+    fn soil_water_photosynthesis_stress_dry() {
+        let f = soil_water_to_photosynthesis_stress(0.2);
+        assert!((f - 0.5).abs() < 0.01, "got {f}");
+    }
+
+    #[test]
+    fn soil_water_photosynthesis_stress_wilted() {
+        assert_eq!(soil_water_to_photosynthesis_stress(0.0), 0.0);
+    }
+
+    #[test]
+    fn soil_water_growth_stress_wet() {
+        assert_eq!(soil_water_to_growth_stress(1.0), 1.0);
+    }
+
+    #[test]
+    fn soil_water_growth_stress_moderate() {
+        let f = soil_water_to_growth_stress(0.3);
+        assert!((f - 0.5).abs() < 0.01, "got {f}");
+    }
+
+    #[test]
+    fn growth_stress_more_sensitive_than_photosynthesis() {
+        let rwc = 0.5;
+        let growth = soil_water_to_growth_stress(rwc);
+        let photo = soil_water_to_photosynthesis_stress(rwc);
+        assert!(growth < photo, "growth={growth}, photo={photo}");
     }
 }

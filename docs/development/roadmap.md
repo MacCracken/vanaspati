@@ -21,7 +21,7 @@ Vanaspati does NOT own:
 
 ### High Priority
 
-- [ ] **Water/soil moisture system** — precipitation, soil water storage, root uptake, drought stress on growth/photosynthesis. Single biggest missing piece — water is the primary limiting factor for plant growth in most terrestrial ecosystems
+- [x] **Water/soil moisture system** — precipitation, soil water storage, root uptake, drought stress on growth/photosynthesis. Single biggest missing piece — water is the primary limiting factor for plant growth in most terrestrial ecosystems
 - [ ] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
 ### Medium Priority
 

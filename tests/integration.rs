@@ -435,3 +435,106 @@ fn water_rainfall_refills_soil() {
         "rain should refill"
     );
 }
+
+#[test]
+fn root_uptake_limits_water_extraction() {
+    use vanaspati::{RootSystem, SoilWater};
+
+    let oak = RootSystem::oak(); // deep roots, 200 L/day
+    let grass = RootSystem::grass(); // shallow roots, 0.5 L/day
+    let soil = SoilWater::loam();
+
+    let demand = 10.0; // mm/day
+    let oak_uptake = oak.water_uptake_mm(&soil, demand);
+    let grass_uptake = grass.water_uptake_mm(&soil, demand);
+
+    assert!(
+        oak_uptake > grass_uptake,
+        "oak={oak_uptake}, grass={grass_uptake}"
+    );
+    // Grass limited by 0.5 capacity
+    assert!((grass_uptake - 0.5).abs() < 0.01);
+    // Oak limited by demand
+    assert!((oak_uptake - 10.0).abs() < 0.01);
+}
+
+#[test]
+fn water_stress_reduces_growth_before_photosynthesis() {
+    use vanaspati::{water_stress_factor, water_stress_growth_factor};
+
+    // At moderate drought (RWC=0.5), growth should be stressed but photosynthesis should not
+    let rwc = 0.5;
+    let growth_f = water_stress_growth_factor(rwc);
+    let photo_f = water_stress_factor(rwc);
+    assert!(growth_f < 1.0, "growth should be stressed at RWC=0.5");
+    assert_eq!(photo_f, 1.0, "photosynthesis should be fine at RWC=0.5");
+
+    // At severe drought (RWC=0.2), both should be stressed
+    let rwc = 0.2;
+    let growth_f = water_stress_growth_factor(rwc);
+    let photo_f = water_stress_factor(rwc);
+    assert!(
+        growth_f < photo_f,
+        "growth more sensitive: g={growth_f}, p={photo_f}"
+    );
+}
+
+#[test]
+fn full_water_growth_pipeline() {
+    use vanaspati::{
+        GrowthModel, RootSystem, SoilWater, daily_water_balance, photosynthesis_rate,
+        water_stress_factor, water_stress_growth_factor,
+    };
+
+    let oak_growth = GrowthModel::oak();
+    let roots = RootSystem::oak();
+    let mut soil = SoilWater::loam();
+
+    // Simulate 90 days of drought — track growth reduction
+    let mut heights = vec![oak_growth.initial_height];
+    let mut current_h = oak_growth.initial_height;
+
+    for _ in 0..90 {
+        let rwc = soil.relative_water_content();
+        let growth_stress = water_stress_growth_factor(rwc);
+        let photo_stress = water_stress_factor(rwc);
+
+        // Growth rate reduced by water stress
+        let base_growth = oak_growth.daily_growth(current_h);
+        let actual_growth = base_growth * growth_stress;
+        current_h += actual_growth;
+        heights.push(current_h);
+
+        // Photosynthesis also affected
+        let _photo = photosynthesis_rate(20.0, 0.05, 800.0) * photo_stress;
+
+        // Transpiration demand based on root uptake
+        let demand = roots.water_uptake_mm(&soil, 5.0);
+        daily_water_balance(&mut soil, 0.0, demand, 2.0);
+    }
+
+    // After 90 dry days, growth should have slowed significantly
+    let early_rate = heights[10] - heights[5];
+    let late_rate = heights[85] - heights[80];
+    assert!(
+        late_rate < early_rate,
+        "growth should slow under drought: early={early_rate}, late={late_rate}"
+    );
+}
+
+#[test]
+fn bridge_water_stress_matches_direct() {
+    use vanaspati::{
+        soil_water_to_growth_stress, soil_water_to_photosynthesis_stress, water_stress_factor,
+        water_stress_growth_factor,
+    };
+
+    let rwc = 0.3;
+    let bridge_growth = soil_water_to_growth_stress(rwc as f64);
+    let direct_growth = water_stress_growth_factor(rwc);
+    assert!((bridge_growth - direct_growth).abs() < 0.01);
+
+    let bridge_photo = soil_water_to_photosynthesis_stress(rwc as f64);
+    let direct_photo = water_stress_factor(rwc);
+    assert!((bridge_photo - direct_photo).abs() < 0.01);
+}

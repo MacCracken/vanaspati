@@ -126,6 +126,31 @@ pub fn temperature_factor_cam(temp_celsius: f32) -> f32 {
     factor
 }
 
+// ── Water stress ─────────────────────────────────────────────────────
+
+/// Water stress factor on photosynthesis (0.0–1.0).
+///
+/// Photosynthesis is relatively drought-tolerant — maintained at full rate
+/// until soil water drops below ~40% of plant-available capacity, then
+/// declines linearly to zero at the wilting point.
+///
+/// `factor = min(1.0, RWC / 0.4)`
+///
+/// Based on Sinclair & Ludlow (1986) — transpirable soil water threshold
+/// for photosynthetic decline in C3 plants.
+///
+/// - `relative_water_content` — fraction of plant-available water (0.0–1.0)
+#[must_use]
+#[inline]
+pub fn water_stress_factor(relative_water_content: f32) -> f32 {
+    if relative_water_content <= 0.0 {
+        return 0.0;
+    }
+    let factor = (relative_water_content / 0.4).clamp(0.0, 1.0);
+    tracing::trace!(relative_water_content, factor, "water_stress_factor");
+    factor
+}
+
 // ── Canopy light competition (Beer-Lambert) ───────────────────────────
 
 /// Light intensity at a given depth in a canopy (µmol photons/m²/s).
@@ -505,5 +530,48 @@ mod tests {
     #[test]
     fn negative_extinction_k_interception_returns_zero() {
         assert_eq!(light_interception(3.0, -0.5), 0.0);
+    }
+
+    // --- Water stress tests ---
+
+    #[test]
+    fn water_stress_full_water() {
+        assert_eq!(water_stress_factor(1.0), 1.0);
+    }
+
+    #[test]
+    fn water_stress_above_threshold() {
+        assert_eq!(water_stress_factor(0.6), 1.0);
+    }
+
+    #[test]
+    fn water_stress_at_threshold() {
+        assert!((water_stress_factor(0.4) - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn water_stress_half_threshold() {
+        assert!((water_stress_factor(0.2) - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn water_stress_wilted() {
+        assert_eq!(water_stress_factor(0.0), 0.0);
+    }
+
+    #[test]
+    fn water_stress_negative() {
+        assert_eq!(water_stress_factor(-0.1), 0.0);
+    }
+
+    #[test]
+    fn water_stress_monotonic() {
+        let mut prev = 0.0_f32;
+        for i in 0..=10 {
+            let rwc = i as f32 / 10.0;
+            let f = water_stress_factor(rwc);
+            assert!(f >= prev, "must be monotonic: rwc={rwc}");
+            prev = f;
+        }
     }
 }
