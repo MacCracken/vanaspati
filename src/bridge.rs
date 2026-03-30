@@ -424,6 +424,108 @@ pub fn light_to_successional_advantage(understory_light_fraction: f64) -> f32 {
     ratio
 }
 
+// ── Fire bridges (badal weather → fire ecology) ──────────────────────
+
+/// Fire weather to fire risk probability (0.0–1.0).
+///
+/// Combines temperature, humidity, and wind into a fire danger index.
+/// Hot, dry, windy conditions increase fire risk.
+///
+/// `risk = temp_factor × (1.0 - humidity) × wind_factor`
+///
+/// Connects to: badal weather data → `fire_mortality()`, `resprout_vigor()`
+///
+/// - `temperature_celsius` — air temperature (°C)
+/// - `relative_humidity` — relative humidity (0.0–1.0)
+/// - `wind_speed_ms` — wind speed (m/s)
+#[must_use]
+pub fn fire_weather_risk(
+    temperature_celsius: f64,
+    relative_humidity: f64,
+    wind_speed_ms: f64,
+) -> f32 {
+    let temp = temperature_celsius as f32;
+    let rh = (relative_humidity as f32).clamp(0.0, 1.0);
+    let wind = (wind_speed_ms as f32).max(0.0);
+
+    // Temperature factor: ramps from 0 at 20°C to 1 at 40°C
+    let temp_f = ((temp - 20.0) / 20.0).clamp(0.0, 1.0);
+    // Dryness factor
+    let dry_f = 1.0 - rh;
+    // Wind factor: ramps from 0.2 at calm to 1.0 at 15 m/s
+    let wind_f = (0.2 + 0.8 * (wind / 15.0).min(1.0)).clamp(0.0, 1.0);
+
+    let risk = (temp_f * dry_f * wind_f).clamp(0.0, 1.0);
+    tracing::trace!(
+        temperature_celsius,
+        relative_humidity,
+        wind_speed_ms,
+        temp_f,
+        dry_f,
+        wind_f,
+        risk,
+        "fire_weather_risk"
+    );
+    risk
+}
+
+// ── Mycorrhiza bridges ───────────────────────────────────────────────
+
+/// Mycorrhizal-enhanced nitrogen uptake from soil state (kg N/m²/day).
+///
+/// Wraps `mycorrhiza::enhanced_n_uptake` for use with soil nitrogen pool.
+/// Applies colonization and fungal type to scale base uptake.
+///
+/// Connects to: `nitrogen_uptake()` → `enhanced_n_uptake()`
+///
+/// - `base_n_uptake` — base nitrogen uptake without fungi (kg N/m²/day)
+/// - `colonization_fraction` — root colonization (0.0–1.0)
+/// - `is_ectomycorrhizal` — true for ECM (forest trees), false for AM (grasses/herbs)
+#[must_use]
+#[inline]
+pub fn mycorrhiza_enhanced_uptake(
+    base_n_uptake: f64,
+    colonization_fraction: f64,
+    is_ectomycorrhizal: bool,
+) -> f32 {
+    let myc_type = if is_ectomycorrhizal {
+        crate::mycorrhiza::MycorrhizalType::Ectomycorrhizal
+    } else {
+        crate::mycorrhiza::MycorrhizalType::Arbuscular
+    };
+    crate::mycorrhiza::enhanced_n_uptake(
+        base_n_uptake as f32,
+        myc_type,
+        colonization_fraction as f32,
+    )
+}
+
+// ── Allelopathy bridges ──────────────────────────────────────────────
+
+/// Allelopathic growth suppression factor (0.0–1.0, where 1.0 = no suppression).
+///
+/// Returns a multiplier to apply to neighbor growth rate.
+/// Wraps `allelopathy::growth_inhibition` and inverts to a growth factor.
+///
+/// `factor = 1.0 - growth_inhibition(concentration, sensitivity)`
+///
+/// Connects to: `GrowthModel::daily_growth()` (multiply result by this)
+///
+/// - `soil_allelochemical_concentration` — soil toxin level (arbitrary units/m²)
+/// - `species_sensitivity` — target species sensitivity (higher = more sensitive)
+#[must_use]
+#[inline]
+pub fn allelopathy_growth_factor(
+    soil_allelochemical_concentration: f64,
+    species_sensitivity: f64,
+) -> f32 {
+    let inhibition = crate::allelopathy::growth_inhibition(
+        soil_allelochemical_concentration as f32,
+        species_sensitivity as f32,
+    );
+    1.0 - inhibition
+}
+
 // ── Jantu bridges (creature behavior) ─────────────────────────────────
 
 /// Herbivore feeding intensity to plant biomass loss (kg).
@@ -853,6 +955,65 @@ mod tests {
         let growth = soil_water_to_growth_stress(rwc);
         let photo = soil_water_to_photosynthesis_stress(rwc);
         assert!(growth < photo, "growth={growth}, photo={photo}");
+    }
+
+    // ── Fire weather bridge tests ─────────────────────────────────────
+
+    #[test]
+    fn fire_weather_hot_dry_windy() {
+        let risk = fire_weather_risk(40.0, 0.1, 15.0);
+        assert!(risk > 0.5, "extreme fire weather, got {risk}");
+    }
+
+    #[test]
+    fn fire_weather_cool_humid() {
+        let risk = fire_weather_risk(15.0, 0.9, 2.0);
+        assert_eq!(risk, 0.0, "cool humid = no fire risk");
+    }
+
+    #[test]
+    fn fire_weather_moderate() {
+        let risk = fire_weather_risk(30.0, 0.3, 10.0);
+        assert!(
+            (0.1..0.7).contains(&risk),
+            "moderate conditions, got {risk}"
+        );
+    }
+
+    // ── Mycorrhiza bridge tests ─────────────────────────────────────
+
+    #[test]
+    fn mycorrhiza_enhances_uptake() {
+        let base = 0.001;
+        let enhanced = mycorrhiza_enhanced_uptake(base, 0.7, true);
+        assert!(enhanced > base as f32);
+    }
+
+    #[test]
+    fn mycorrhiza_zero_colonization() {
+        let base = 0.001;
+        let enhanced = mycorrhiza_enhanced_uptake(base, 0.0, true);
+        assert!((enhanced - base as f32).abs() < 0.0001);
+    }
+
+    // ── Allelopathy bridge tests ─────────────────────────────────────
+
+    #[test]
+    fn allelopathy_no_toxin() {
+        assert_eq!(allelopathy_growth_factor(0.0, 5.0), 1.0);
+    }
+
+    #[test]
+    fn allelopathy_high_toxin_sensitive() {
+        let f = allelopathy_growth_factor(1.0, 10.0);
+        assert!(f < 0.1, "high toxin should strongly suppress, got {f}");
+    }
+
+    #[test]
+    fn allelopathy_tolerant_less_affected() {
+        let tolerant = allelopathy_growth_factor(0.5, 1.0);
+        let sensitive = allelopathy_growth_factor(0.5, 10.0);
+        assert!(tolerant > sensitive);
     }
 
     // ── Succession bridge tests ──────────────────────────────────────

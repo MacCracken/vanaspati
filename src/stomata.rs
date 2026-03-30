@@ -2,6 +2,7 @@
 //! leaf interior and atmosphere. Stomata regulate the trade-off between
 //! CO₂ uptake (photosynthesis) and water loss (transpiration).
 
+use hisab::transforms::inverse_lerp;
 use serde::{Deserialize, Serialize};
 
 /// Stomatal behavior type.
@@ -181,7 +182,7 @@ pub fn drought_stomatal_factor(
     if soil_water_fraction >= field_capacity {
         return 1.0;
     }
-    let relative = (soil_water_fraction - wilting_point) / (field_capacity - wilting_point);
+    let relative = inverse_lerp(wilting_point, field_capacity, soil_water_fraction);
     let exponent = match behavior {
         StomatalBehavior::Anisohydric => 1.0,
         StomatalBehavior::Isohydric => 2.0,

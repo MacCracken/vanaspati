@@ -58,18 +58,22 @@ pub mod decomposition;
 pub mod dispersal;
 pub mod ecosystem;
 pub mod error;
+pub mod evapotranspiration;
 pub mod fire;
 pub mod growth;
 pub mod herbivory;
 /// Integration APIs for downstream consumers (soorat rendering).
 pub mod integration;
+pub mod lai;
 pub mod mortality;
 pub mod mycorrhiza;
 pub mod nitrogen;
+pub mod pft;
 pub mod phenology;
 pub mod photosynthesis;
 pub mod pollination;
 pub mod reproduction;
+pub mod respiration;
 pub mod root;
 pub mod season;
 pub mod stomata;
@@ -87,10 +91,10 @@ pub use growth::{GrowthModel, GrowthStage, growth_stage, water_stress_growth_fac
 
 // Photosynthesis
 pub use photosynthesis::{
-    PhotosynthesisPathway, canopy_light_at_depth, light_compensation_point, light_interception,
-    pathway_params, photosynthesis_rate, shaded_photosynthesis_rate, temperature_factor,
-    temperature_factor_c4, temperature_factor_cam, understory_light_fraction, water_stress_factor,
-    water_use_efficiency,
+    PhotosynthesisPathway, canopy_light_at_depth, co2_factor, light_compensation_point,
+    light_interception, pathway_params, photosynthesis_rate, photosynthesis_rate_co2,
+    shaded_photosynthesis_rate, temperature_factor, temperature_factor_c4, temperature_factor_cam,
+    understory_light_fraction, water_stress_factor, water_use_efficiency,
 };
 
 // Season
@@ -156,10 +160,32 @@ pub use phenology::{
 
 // Decomposition
 pub use decomposition::{
-    LitterType, base_decomposition_rate, daily_decomposition_rate, half_life_days, mass_decomposed,
-    moisture_decomposition_factor, nitrogen_release, remaining_mass,
+    LitterType, SoilCarbon, SomFluxes, SomPool, base_decomposition_rate, daily_decomposition_rate,
+    daily_som_turnover, half_life_days, mass_decomposed, moisture_decomposition_factor,
+    nitrogen_release, remaining_mass, som_transfer_fractions, som_turnover_rate,
     temperature_decomposition_factor,
 };
+
+// Respiration
+pub use respiration::{
+    RespirationComponent, growth_respiration, growth_respiration_fraction, maintenance_respiration,
+    net_primary_productivity_carbon, organ_respiration_coefficient,
+    partitioned_maintenance_respiration, total_autotrophic_respiration,
+};
+
+// LAI
+pub use lai::{
+    LeafHabit, drought_leaf_retention, effective_lai, frost_leaf_loss, lai_from_biomass, max_lai,
+    seasonal_lai_multiplier,
+};
+
+// Evapotranspiration
+pub use evapotranspiration::{
+    penman_monteith_et, psychrometric_constant, reference_et, surface_resistance, svp_slope,
+};
+
+// Plant Functional Types
+pub use pft::{PftParams, PftType};
 
 // Nitrogen
 pub use nitrogen::{
@@ -191,11 +217,12 @@ pub use ecosystem::{competition_growth, net_primary_productivity, shannon_divers
 
 // Bridge
 pub use bridge::{
-    atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score, evapotranspiration_cooling,
-    frost_risk_to_mortality, frost_to_dormancy, growing_conditions_to_growth_multiplier,
-    herbivore_to_biomass_loss, humidity_to_vpd, light_to_successional_advantage,
-    nitrogen_to_growth_stress, rainfall_to_water_supply, seed_production_to_food,
-    soil_temperature_to_growth_factor, soil_temperature_to_root_activity,
-    soil_water_to_growth_stress, soil_water_to_photosynthesis_stress, solar_to_par,
-    wet_bulb_to_heat_stress, wind_to_boundary_conductance, wind_to_dispersal_speed,
+    allelopathy_growth_factor, atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score,
+    evapotranspiration_cooling, fire_weather_risk, frost_risk_to_mortality, frost_to_dormancy,
+    growing_conditions_to_growth_multiplier, herbivore_to_biomass_loss, humidity_to_vpd,
+    light_to_successional_advantage, mycorrhiza_enhanced_uptake, nitrogen_to_growth_stress,
+    rainfall_to_water_supply, seed_production_to_food, soil_temperature_to_growth_factor,
+    soil_temperature_to_root_activity, soil_water_to_growth_stress,
+    soil_water_to_photosynthesis_stress, solar_to_par, wet_bulb_to_heat_stress,
+    wind_to_boundary_conductance, wind_to_dispersal_speed,
 };

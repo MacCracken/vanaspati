@@ -1,6 +1,7 @@
 //! Soil water storage and hydrology — precipitation, infiltration, drainage,
 //! root uptake, and water balance for plant-soil systems.
 
+use hisab::transforms::inverse_lerp;
 use serde::{Deserialize, Serialize};
 
 /// Soil texture type — determines hydraulic properties.
@@ -110,7 +111,7 @@ impl SoilWater {
         if cap <= 0.0 {
             return 0.0;
         }
-        let rwc = (self.available_water_mm() / cap).clamp(0.0, 1.0);
+        let rwc = inverse_lerp(0.0, cap, self.available_water_mm()).clamp(0.0, 1.0);
         tracing::trace!(
             water_content_mm = self.water_content_mm,
             available = self.available_water_mm(),
@@ -158,6 +159,7 @@ impl SoilWater {
     /// Water fills up to saturation; anything beyond runs off.
     ///
     /// - `water_mm` — water to add (mm)
+    #[must_use]
     pub fn add_water(&mut self, water_mm: f32) -> f32 {
         if water_mm <= 0.0 {
             return 0.0;
@@ -181,6 +183,7 @@ impl SoilWater {
     /// Cannot remove below zero.
     ///
     /// - `water_mm` — water to remove (mm)
+    #[must_use]
     pub fn remove_water(&mut self, water_mm: f32) -> f32 {
         if water_mm <= 0.0 {
             return 0.0;
@@ -203,6 +206,7 @@ impl SoilWater {
     /// Sand 0.6, SandyLoam 0.4, Loam 0.25, ClayLoam 0.15, Clay 0.08.
     ///
     /// - `fraction_of_day` — time step as fraction of a day (1.0 = full day)
+    #[must_use]
     pub fn drain(&mut self, fraction_of_day: f32) -> f32 {
         let excess = (self.water_content_mm - self.field_capacity_mm).max(0.0);
         if excess <= 0.0 {
@@ -351,6 +355,7 @@ impl WaterFluxes {
 /// - `rainfall_mm` — daily rainfall (mm)
 /// - `transpiration_mm` — daily transpiration demand from canopy (mm)
 /// - `potential_evaporation_mm` — daily potential soil evaporation (mm)
+#[must_use]
 pub fn daily_water_balance(
     soil: &mut SoilWater,
     rainfall_mm: f32,
@@ -794,7 +799,7 @@ mod tests {
         let mut s = SoilWater::loam();
         // Simulate 30 dry days with transpiration
         for _ in 0..30 {
-            daily_water_balance(&mut s, 0.0, 5.0, 2.0);
+            let _ = daily_water_balance(&mut s, 0.0, 5.0, 2.0);
         }
         assert!(
             s.relative_water_content() < 0.3,

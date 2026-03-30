@@ -73,6 +73,7 @@ impl SoilNitrogen {
     /// Returns actual amount added (kg N/m²).
     ///
     /// - `n_kg_m2` — nitrogen to add (kg N/m²)
+    #[must_use]
     pub fn add_available(&mut self, n_kg_m2: f32) -> f32 {
         if n_kg_m2 <= 0.0 {
             return 0.0;
@@ -86,6 +87,7 @@ impl SoilNitrogen {
     /// Returns actual amount added (kg N/m²).
     ///
     /// - `n_kg_m2` — nitrogen to add (kg N/m²)
+    #[must_use]
     pub fn add_organic(&mut self, n_kg_m2: f32) -> f32 {
         if n_kg_m2 <= 0.0 {
             return 0.0;
@@ -99,6 +101,7 @@ impl SoilNitrogen {
     /// Cannot go below zero.
     ///
     /// - `n_kg_m2` — nitrogen to remove (kg N/m²)
+    #[must_use]
     pub fn remove_available(&mut self, n_kg_m2: f32) -> f32 {
         if n_kg_m2 <= 0.0 {
             return 0.0;
@@ -349,6 +352,7 @@ impl NitrogenFluxes {
 /// - `root_biomass_kg` — root dry mass (kg)
 /// - `drainage_mm` — daily drainage (mm, from water balance)
 /// - `soil_water_mm` — current soil water (mm)
+#[must_use]
 pub fn daily_nitrogen_balance(
     soil_n: &mut SoilNitrogen,
     temp_celsius: f32,
@@ -371,11 +375,11 @@ pub fn daily_nitrogen_balance(
         root_biomass_kg,
         moisture_fraction,
     );
-    soil_n.remove_available(uptake);
+    let _ = soil_n.remove_available(uptake);
 
     // 3. Leaching
     let leached = nitrogen_leaching(soil_n.available_n, drainage_mm, soil_water_mm);
-    soil_n.remove_available(leached);
+    let _ = soil_n.remove_available(leached);
 
     let fluxes = NitrogenFluxes {
         mineralization: mineralized,
@@ -432,7 +436,8 @@ mod tests {
     fn add_available_increases() {
         let mut sn = SoilNitrogen::poor();
         let before = sn.available_n;
-        sn.add_available(0.002);
+        let added = sn.add_available(0.002);
+        assert!((added - 0.002).abs() < 0.0001);
         assert!((sn.available_n - before - 0.002).abs() < 0.0001);
     }
 
@@ -448,7 +453,8 @@ mod tests {
     fn add_organic_increases() {
         let mut sn = SoilNitrogen::poor();
         let before = sn.organic_n;
-        sn.add_organic(0.01);
+        let added = sn.add_organic(0.01);
+        assert!((added - 0.01).abs() < 0.001);
         assert!((sn.organic_n - before - 0.01).abs() < 0.001);
     }
 
@@ -756,7 +762,7 @@ mod tests {
         let mut sn = SoilNitrogen::poor();
         // Heavy demand, no replenishment
         for _ in 0..365 {
-            daily_nitrogen_balance(&mut sn, 20.0, 0.5, 0.001, 100.0, 5.0, 200.0);
+            let _ = daily_nitrogen_balance(&mut sn, 20.0, 0.5, 0.001, 100.0, 5.0, 200.0);
         }
         assert!(
             sn.available_n < SoilNitrogen::poor().available_n * 0.1,

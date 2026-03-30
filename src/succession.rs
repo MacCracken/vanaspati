@@ -4,6 +4,7 @@
 //! Models the trade-off between fast growth in open conditions (pioneers)
 //! and shade tolerance for persistence under canopy (climax species).
 
+use hisab::transforms::inverse_lerp;
 use serde::{Deserialize, Serialize};
 
 /// Successional stage of a plant community or species strategy.
@@ -101,12 +102,11 @@ pub fn establishment_probability(light_fraction: f32, stage: SuccessionalStage) 
         return 0.0;
     }
 
-    let range = 1.0 - min_light;
-    if range <= 0.0 {
+    if min_light >= 1.0 {
         return 1.0;
     }
 
-    let relative = (light - min_light) / range;
+    let relative = inverse_lerp(min_light, 1.0, light);
     let exponent = match stage {
         SuccessionalStage::Pioneer => 0.5, // fast response to light
         SuccessionalStage::MidSuccessional => 1.0, // linear

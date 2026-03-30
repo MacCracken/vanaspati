@@ -406,7 +406,7 @@ fn water_stomata_drought_feedback() {
         // Transpire based on conductance
         let e_mmol = transpiration_rate(gs, vpd, 101.3);
         let e_mm = e_mmol * 0.018 * 3600.0 * 12.0 / 1000.0; // rough: mmol/m²/s → mm/day (12h)
-        daily_water_balance(&mut soil, 0.0, e_mm, 2.0);
+        let _ = daily_water_balance(&mut soil, 0.0, e_mm, 2.0);
     }
 
     assert!(
@@ -422,14 +422,14 @@ fn water_rainfall_refills_soil() {
     let mut soil = SoilWater::loam();
     // Dry out
     for _ in 0..30 {
-        daily_water_balance(&mut soil, 0.0, 5.0, 2.0);
+        let _ = daily_water_balance(&mut soil, 0.0, 5.0, 2.0);
     }
     let dry_rwc = soil.relative_water_content();
     assert!(dry_rwc < 0.5);
 
     // Rainstorm: badal says 10 mm/hr for 3 hours
     let rain = rainfall_to_water_supply(10.0, 3.0); // 30 mm
-    daily_water_balance(&mut soil, rain, 0.0, 0.0);
+    let _ = daily_water_balance(&mut soil, rain, 0.0, 0.0);
     assert!(
         soil.relative_water_content() > dry_rwc,
         "rain should refill"
@@ -510,7 +510,7 @@ fn full_water_growth_pipeline() {
 
         // Transpiration demand based on root uptake
         let demand = roots.water_uptake_mm(&soil, 5.0);
-        daily_water_balance(&mut soil, 0.0, demand, 2.0);
+        let _ = daily_water_balance(&mut soil, 0.0, demand, 2.0);
     }
 
     // After 90 dry days, growth should have slowed significantly
@@ -557,11 +557,11 @@ fn decomposition_feeds_nitrogen_pool() {
     let n_released = nitrogen_release(decomposed, 40.0); // C:N = 40
 
     // Add released N to organic pool (litter N enters organic first)
-    soil_n.add_organic(n_released);
+    let _ = soil_n.add_organic(n_released);
 
     // Run 30 days of mineralization to convert some organic → available
     for _ in 0..30 {
-        daily_nitrogen_balance(&mut soil_n, 25.0, 0.6, 0.0, 0.0, 0.0, 200.0);
+        let _ = daily_nitrogen_balance(&mut soil_n, 25.0, 0.6, 0.0, 0.0, 0.0, 200.0);
     }
 
     assert!(

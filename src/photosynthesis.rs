@@ -126,6 +126,73 @@ pub fn temperature_factor_cam(temp_celsius: f32) -> f32 {
     factor
 }
 
+// ── CO2 effects ─────────────────────────────────────────────────────
+
+/// Reference atmospheric CO₂ concentration (µmol/mol, ppm).
+const CO2_REFERENCE_PPM: f32 = 400.0;
+
+/// CO₂ fertilization factor on photosynthesis (dimensionless multiplier).
+///
+/// Higher CO₂ increases photosynthesis through substrate availability.
+/// C3 plants respond strongly; C4 plants are nearly saturated at ambient CO₂.
+///
+/// Michaelis-Menten response:
+/// `factor = (co2 / (co2 + K_co2)) / (ref / (ref + K_co2))`
+///
+/// K_co2 half-saturation constants:
+/// - C3: 300 µmol/mol (strong response to elevated CO₂)
+/// - C4: 30 µmol/mol (nearly saturated at 400 ppm)
+/// - CAM: 200 µmol/mol (intermediate)
+///
+/// Normalized so factor = 1.0 at 400 ppm.
+///
+/// - `co2_ppm` — atmospheric CO₂ concentration (µmol/mol)
+/// - `pathway` — photosynthesis pathway
+#[must_use]
+#[inline]
+pub fn co2_factor(co2_ppm: f32, pathway: PhotosynthesisPathway) -> f32 {
+    if co2_ppm <= 0.0 {
+        return 0.0;
+    }
+    let k = match pathway {
+        PhotosynthesisPathway::C3 => 300.0,
+        PhotosynthesisPathway::C4 => 30.0,
+        PhotosynthesisPathway::CAM => 200.0,
+    };
+    let ref_response = CO2_REFERENCE_PPM / (CO2_REFERENCE_PPM + k);
+    let current_response = co2_ppm / (co2_ppm + k);
+    let factor = current_response / ref_response;
+    tracing::trace!(co2_ppm, ?pathway, k, factor, "co2_factor");
+    factor
+}
+
+/// CO₂-sensitive photosynthesis rate (µmol CO₂/m²/s).
+///
+/// Extends `photosynthesis_rate` with atmospheric CO₂ concentration effect.
+///
+/// `rate = photosynthesis_rate(Pmax × co2_factor, α, light)`
+///
+/// CO₂ scales the effective Pmax through Michaelis-Menten kinetics.
+/// At 400 ppm (reference), result equals `photosynthesis_rate`.
+///
+/// - `max_rate` — Pmax at reference CO₂ (µmol CO₂/m²/s)
+/// - `quantum_yield` — α (mol CO₂ / mol photons)
+/// - `light_intensity` — PAR (µmol photons/m²/s)
+/// - `co2_ppm` — atmospheric CO₂ (µmol/mol)
+/// - `pathway` — C3/C4/CAM
+#[must_use]
+pub fn photosynthesis_rate_co2(
+    max_rate: f32,
+    quantum_yield: f32,
+    light_intensity: f32,
+    co2_ppm: f32,
+    pathway: PhotosynthesisPathway,
+) -> f32 {
+    let co2_f = co2_factor(co2_ppm, pathway);
+    let effective_pmax = max_rate * co2_f;
+    photosynthesis_rate(effective_pmax, quantum_yield, light_intensity)
+}
+
 // ── Water stress ─────────────────────────────────────────────────────
 
 /// Water stress factor on photosynthesis (0.0–1.0).
@@ -573,5 +640,54 @@ mod tests {
             assert!(f >= prev, "must be monotonic: rwc={rwc}");
             prev = f;
         }
+    }
+
+    // --- CO2 factor tests ---
+
+    #[test]
+    fn co2_factor_at_reference() {
+        let f = co2_factor(400.0, PhotosynthesisPathway::C3);
+        assert!((f - 1.0).abs() < 0.01, "at 400 ppm should be 1.0, got {f}");
+    }
+
+    #[test]
+    fn co2_factor_elevated_c3() {
+        let f = co2_factor(800.0, PhotosynthesisPathway::C3);
+        assert!(f > 1.2, "doubled CO2 should increase C3 rate, got {f}");
+    }
+
+    #[test]
+    fn co2_factor_c4_less_responsive() {
+        let c3 = co2_factor(800.0, PhotosynthesisPathway::C3);
+        let c4 = co2_factor(800.0, PhotosynthesisPathway::C4);
+        assert!(
+            c3 > c4,
+            "C3 should respond more to elevated CO2: c3={c3}, c4={c4}"
+        );
+    }
+
+    #[test]
+    fn co2_factor_zero_ppm() {
+        assert_eq!(co2_factor(0.0, PhotosynthesisPathway::C3), 0.0);
+    }
+
+    #[test]
+    fn co2_factor_preindustrial() {
+        let f = co2_factor(280.0, PhotosynthesisPathway::C3);
+        assert!(f < 1.0, "preindustrial CO2 should reduce rate, got {f}");
+    }
+
+    #[test]
+    fn co2_photosynthesis_rate_at_reference() {
+        let base = photosynthesis_rate(20.0, 0.05, 800.0);
+        let co2 = photosynthesis_rate_co2(20.0, 0.05, 800.0, 400.0, PhotosynthesisPathway::C3);
+        assert!((base - co2).abs() < 0.1, "at 400 ppm should equal base");
+    }
+
+    #[test]
+    fn co2_photosynthesis_elevated() {
+        let base = photosynthesis_rate(20.0, 0.05, 800.0);
+        let elevated = photosynthesis_rate_co2(20.0, 0.05, 800.0, 800.0, PhotosynthesisPathway::C3);
+        assert!(elevated > base, "elevated CO2 should increase rate");
     }
 }

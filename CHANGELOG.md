@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **respiration** — `maintenance_respiration` (Ryan 1991, N-proportional × Q10 temperature), `growth_respiration` (Penning de Vries 1975, 25% construction cost), `partitioned_maintenance_respiration` (organ-specific coefficients), `total_autotrophic_respiration`, `net_primary_productivity_carbon` (NPP = GPP - Ra), `organ_respiration_coefficient`, `growth_respiration_fraction`
+- **lai** — `LeafHabit` enum (Deciduous, Evergreen, DroughtDeciduous), `lai_from_biomass` (SLA-based), `seasonal_lai_multiplier` (hemisphere-aware phenology), `drought_leaf_retention` (habit-dependent), `frost_leaf_loss`, `effective_lai` (combining all factors), `max_lai`
+- **evapotranspiration** — Penman-Monteith `penman_monteith_et` (FAO-56 energy balance), `reference_et` (grass reference), `surface_resistance` (stomatal conductance → canopy resistance), `svp_slope`, `psychrometric_constant`
+- **pft** — `PftType` enum (7 types: TropicalBroadleafEvergreen, TemperateBroadleafDeciduous, TemperateNeedleleafEvergreen, BorealNeedleleafEvergreen, C3Grass, C4Grass, Shrub), `PftParams` complete parameter struct (photosynthesis, growth, leaf, allocation, root, mortality, N), `from_type` preset loader
+- **photosynthesis** — `co2_factor` (Michaelis-Menten CO₂ fertilization, C3/C4/CAM-specific half-saturation), `photosynthesis_rate_co2` (CO₂-sensitive photosynthesis)
+- **decomposition** — CENTURY-style `SoilCarbon` 3-pool model (active/slow/passive SOM), `SomPool` enum, `som_turnover_rate`, `som_transfer_fractions`, `daily_som_turnover` with heterotrophic respiration, `SomFluxes` summary
 - **water** — `SoilType` enum (Sand, SandyLoam, Loam, ClayLoam, Clay), `SoilWater` struct with hydraulic properties (Saxton & Rawls 2006), presets (sand, loam, clay), `add_water`/`remove_water`/`drain` state mutation, `relative_water_content`, `available_water_mm`, `deficit_mm`, `saturated_conductivity` (Rawls 1982), `infiltration_rate` (Green-Ampt), `soil_evaporation` (Philip stage-2), `WaterFluxes` summary struct, `daily_water_balance` combining rainfall→infiltration→drainage→transpiration→evaporation
 - **root** — `root_zone_fraction(soil_depth)` scales water access by root depth vs soil depth; `water_uptake_mm(soil, demand)` extracts water limited by root capacity, zone available water, and transpiration demand
 - **photosynthesis** — `water_stress_factor(rwc)` direct drought stress on photosynthesis (Sinclair & Ludlow 1986 threshold at RWC=0.4)
@@ -29,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **photosynthesis** — negative `extinction_k` in canopy functions now guarded (was exponential overflow)
 - **season** — `daylight_hours_at` at ±90° latitude no longer produces wrong results (tan singularity clamped)
 - **root** — added `RootSystem::mangrove()` preset for adventitious root type
-- **Cargo.toml** — removed unused `hisab` dependency (81 → 79 deps)
+- **Cargo.toml** — restored `hisab` dependency for math primitives (inverse_lerp, remap, transforms)
 
 ## [0.2.0] - 2026-03-29
 

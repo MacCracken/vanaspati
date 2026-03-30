@@ -33,6 +33,18 @@ Vanaspati does NOT own:
 - [x] **Succession dynamics** — pioneer vs. climax species, shade tolerance, lifespan classes
 - [x] Remaining mortality types — fire, disease, windthrow
 
+### Post-v1.0
+
+- [ ] **Farquhar (FvCB) photosynthesis** — Rubisco/RuBP/TPU-limited biochemical model (feature-gated alongside simplified light response)
+- [ ] Multi-layer soil hydrology (2–3 layers)
+- [ ] Phosphorus cycle
+- [ ] Snow accumulation/melt
+- [ ] Soil temperature model
+- [ ] Litter quality chemistry (lignin:N ratio)
+- [ ] Cohort/individual tracking (size/age-structured)
+- [ ] Management operations (tillage, irrigation, harvest, thinning)
+- [ ] Spatial grid / landscape processes
+
 ---
 
 ## Completed
