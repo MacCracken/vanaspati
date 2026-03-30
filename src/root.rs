@@ -38,6 +38,17 @@ impl RootSystem {
         }
     }
 
+    /// Mangrove: adventitious prop roots, coastal.
+    #[must_use]
+    pub fn mangrove() -> Self {
+        Self {
+            root_type: RootType::Adventitious,
+            max_depth_m: 1.5,
+            spread_radius_m: 5.0,
+            water_uptake_rate: 50.0,
+        }
+    }
+
     /// Soil stabilization factor (0–1, dimensionless). Fibrous roots stabilize better per area.
     #[must_use]
     pub fn stabilization_factor(&self) -> f32 {

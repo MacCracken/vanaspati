@@ -81,7 +81,8 @@ impl Season {
 #[must_use]
 pub fn daylight_hours_at(day_of_year: u16, latitude_deg: f32) -> f32 {
     let day = day_of_year.clamp(1, 365) as f32;
-    let lat_rad = latitude_deg.to_radians();
+    // Clamp latitude to avoid tan(±90°) singularity
+    let lat_rad = latitude_deg.clamp(-89.99, 89.99).to_radians();
 
     // Solar declination (radians)
     let declination =
@@ -239,6 +240,29 @@ mod tests {
     fn daylight_polar_midnight_sun() {
         let hours = daylight_hours_at(172, 70.0); // 70°N, summer solstice
         assert_eq!(hours, 24.0, "should be midnight sun");
+    }
+
+    #[test]
+    fn daylight_north_pole_summer() {
+        assert_eq!(
+            daylight_hours_at(172, 90.0),
+            24.0,
+            "north pole summer = 24h"
+        );
+    }
+
+    #[test]
+    fn daylight_north_pole_winter() {
+        assert_eq!(daylight_hours_at(356, 90.0), 0.0, "north pole winter = 0h");
+    }
+
+    #[test]
+    fn daylight_south_pole_summer() {
+        assert_eq!(
+            daylight_hours_at(356, -90.0),
+            24.0,
+            "south pole summer = 24h"
+        );
     }
 
     #[test]

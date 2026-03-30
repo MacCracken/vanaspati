@@ -56,8 +56,8 @@ pub struct GrowthModel {
 impl GrowthModel {
     /// Height at a given day (meters).
     ///
-    /// Assumes `initial_height` < `max_height`. If `initial_height` >= `max_height`,
-    /// results are undefined.
+    /// Works best when `initial_height` < `max_height`. If `initial_height` >= `max_height`,
+    /// the curve converges toward `max_height` from above.
     #[must_use]
     pub fn height_at_day(&self, day: f32) -> f32 {
         if self.initial_height <= 0.0 {
