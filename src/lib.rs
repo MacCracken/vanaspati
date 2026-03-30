@@ -101,7 +101,10 @@ pub use mortality::{
 };
 
 // Water
-pub use water::{SoilType, SoilWater, infiltration_rate, saturated_conductivity, soil_evaporation};
+pub use water::{
+    SoilType, SoilWater, WaterFluxes, daily_water_balance, infiltration_rate,
+    saturated_conductivity, soil_evaporation,
+};
 
 // Stomata
 pub use stomata::{

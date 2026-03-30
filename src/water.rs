@@ -315,6 +315,98 @@ pub fn soil_evaporation(
     evap
 }
 
+/// Daily water flux summary (all values in mm).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WaterFluxes {
+    pub rainfall_mm: f32,      // incoming precipitation (mm)
+    pub infiltration_mm: f32,  // water entering soil (mm)
+    pub runoff_mm: f32,        // surface runoff (mm)
+    pub drainage_mm: f32,      // gravity drainage below root zone (mm)
+    pub transpiration_mm: f32, // water lost through stomata (mm)
+    pub evaporation_mm: f32,   // soil surface evaporation (mm)
+}
+
+impl WaterFluxes {
+    /// Net change in soil water (mm). Positive = gaining, negative = losing.
+    #[must_use]
+    #[inline]
+    pub fn net_change_mm(&self) -> f32 {
+        self.infiltration_mm - self.drainage_mm - self.transpiration_mm - self.evaporation_mm
+    }
+}
+
+/// Run a daily water balance step on a soil column.
+///
+/// Processes in order:
+/// 1. Rainfall → infiltration (excess = runoff)
+/// 2. Gravity drainage of water above field capacity
+/// 3. Transpiration removal (from stomata)
+/// 4. Soil surface evaporation
+///
+/// Mutates `soil` in place and returns the flux summary.
+///
+/// - `soil` — mutable soil water state
+/// - `rainfall_mm` — daily rainfall (mm)
+/// - `transpiration_mm` — daily transpiration demand from canopy (mm)
+/// - `potential_evaporation_mm` — daily potential soil evaporation (mm)
+pub fn daily_water_balance(
+    soil: &mut SoilWater,
+    rainfall_mm: f32,
+    transpiration_mm: f32,
+    potential_evaporation_mm: f32,
+) -> WaterFluxes {
+    // 1. Rainfall → add to soil, capture runoff
+    let runoff = soil.add_water(rainfall_mm.max(0.0));
+    let infiltration = rainfall_mm.max(0.0) - runoff;
+
+    // 2. Gravity drainage
+    let drainage = soil.drain(1.0);
+
+    // 3. Transpiration (plants extract from available water)
+    let transpiration = if transpiration_mm > 0.0 {
+        let available = soil.available_water_mm();
+        let actual_demand = transpiration_mm.min(available);
+        soil.remove_water(actual_demand)
+    } else {
+        0.0
+    };
+
+    // 4. Soil evaporation (from remaining water)
+    let evaporation = if potential_evaporation_mm > 0.0 {
+        let evap = soil_evaporation(
+            potential_evaporation_mm,
+            soil.water_content_mm,
+            soil.field_capacity_mm,
+        );
+        soil.remove_water(evap)
+    } else {
+        0.0
+    };
+
+    let fluxes = WaterFluxes {
+        rainfall_mm: rainfall_mm.max(0.0),
+        infiltration_mm: infiltration,
+        runoff_mm: runoff,
+        drainage_mm: drainage,
+        transpiration_mm: transpiration,
+        evaporation_mm: evaporation,
+    };
+
+    tracing::trace!(
+        rainfall = fluxes.rainfall_mm,
+        infiltration = fluxes.infiltration_mm,
+        runoff = fluxes.runoff_mm,
+        drainage = fluxes.drainage_mm,
+        transpiration = fluxes.transpiration_mm,
+        evaporation = fluxes.evaporation_mm,
+        net = fluxes.net_change_mm(),
+        content = soil.water_content_mm,
+        "daily_water_balance"
+    );
+
+    fluxes
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -594,5 +686,126 @@ mod tests {
     #[test]
     fn evaporation_zero_potential() {
         assert_eq!(soil_evaporation(0.0, 270.0, 270.0), 0.0);
+    }
+
+    // --- Daily water balance ---
+
+    #[test]
+    fn balance_rain_only() {
+        let mut s = SoilWater::loam();
+        s.water_content_mm = s.wilting_point_mm; // start dry
+        let f = daily_water_balance(&mut s, 20.0, 0.0, 0.0);
+        assert!((f.rainfall_mm - 20.0).abs() < 0.01);
+        assert!((f.infiltration_mm - 20.0).abs() < 0.01);
+        assert_eq!(f.runoff_mm, 0.0);
+        assert_eq!(f.transpiration_mm, 0.0);
+        assert_eq!(f.evaporation_mm, 0.0);
+        assert!(s.water_content_mm > s.wilting_point_mm);
+    }
+
+    #[test]
+    fn balance_heavy_rain_runoff() {
+        let mut s = SoilWater::loam();
+        s.water_content_mm = s.saturation_mm - 5.0; // nearly full
+        let f = daily_water_balance(&mut s, 50.0, 0.0, 0.0);
+        assert!(f.runoff_mm > 40.0, "most rain should run off");
+        assert!(f.infiltration_mm < 10.0);
+    }
+
+    #[test]
+    fn balance_transpiration_removes_water() {
+        let mut s = SoilWater::loam();
+        let before = s.water_content_mm;
+        let f = daily_water_balance(&mut s, 0.0, 3.0, 0.0);
+        assert!(f.transpiration_mm > 0.0);
+        assert!(s.water_content_mm < before);
+    }
+
+    #[test]
+    fn balance_transpiration_limited_by_available() {
+        let mut s = SoilWater::loam();
+        s.water_content_mm = s.wilting_point_mm + 1.0; // barely above wilting
+        let f = daily_water_balance(&mut s, 0.0, 100.0, 0.0);
+        assert!(
+            f.transpiration_mm <= 1.0,
+            "can't transpire more than available"
+        );
+    }
+
+    #[test]
+    fn balance_evaporation_removes_water() {
+        let mut s = SoilWater::loam();
+        let before = s.water_content_mm;
+        let f = daily_water_balance(&mut s, 0.0, 0.0, 5.0);
+        assert!(f.evaporation_mm > 0.0);
+        assert!(s.water_content_mm < before);
+    }
+
+    #[test]
+    fn balance_drainage_from_saturation() {
+        let mut s = SoilWater::loam();
+        s.water_content_mm = s.saturation_mm;
+        let f = daily_water_balance(&mut s, 0.0, 0.0, 0.0);
+        assert!(f.drainage_mm > 0.0, "saturated soil should drain");
+    }
+
+    #[test]
+    fn balance_no_drainage_at_fc() {
+        let mut s = SoilWater::loam();
+        // At field capacity, no inputs
+        let f = daily_water_balance(&mut s, 0.0, 0.0, 0.0);
+        assert_eq!(f.drainage_mm, 0.0);
+    }
+
+    #[test]
+    fn balance_net_change_sign() {
+        let mut s = SoilWater::loam();
+        // Rain only → net positive
+        let f = daily_water_balance(&mut s, 20.0, 0.0, 0.0);
+        assert!(f.net_change_mm() > 0.0);
+
+        // Transpiration only → net negative
+        let mut s2 = SoilWater::loam();
+        let f2 = daily_water_balance(&mut s2, 0.0, 5.0, 3.0);
+        assert!(f2.net_change_mm() < 0.0);
+    }
+
+    #[test]
+    fn balance_negative_rain_ignored() {
+        let mut s = SoilWater::loam();
+        let before = s.water_content_mm;
+        let f = daily_water_balance(&mut s, -10.0, 0.0, 0.0);
+        assert_eq!(f.rainfall_mm, 0.0);
+        // Only drainage might change it
+        assert!(s.water_content_mm <= before);
+    }
+
+    #[test]
+    fn balance_multi_day_dry_down() {
+        let mut s = SoilWater::loam();
+        // Simulate 30 dry days with transpiration
+        for _ in 0..30 {
+            daily_water_balance(&mut s, 0.0, 5.0, 2.0);
+        }
+        assert!(
+            s.relative_water_content() < 0.3,
+            "30 dry days should significantly deplete soil, rwc={}",
+            s.relative_water_content()
+        );
+    }
+
+    #[test]
+    fn balance_conservation() {
+        // Water in = water out + change in storage
+        let mut s = SoilWater::loam();
+        let before = s.water_content_mm;
+        let f = daily_water_balance(&mut s, 15.0, 3.0, 2.0);
+        let after = s.water_content_mm;
+        let storage_change = after - before;
+        let balance = f.infiltration_mm - f.drainage_mm - f.transpiration_mm - f.evaporation_mm;
+        assert!(
+            (storage_change - balance).abs() < 0.1,
+            "water balance should be conserved: storage_change={storage_change}, flux_balance={balance}"
+        );
     }
 }

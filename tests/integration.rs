@@ -383,3 +383,55 @@ fn bridge_humidity_to_stomatal_pipeline() {
     let e = transpiration_rate(gs, vpd, 101.3);
     assert!(e > 0.0);
 }
+
+// --- Water balance integration tests ---
+
+#[test]
+fn water_stomata_drought_feedback() {
+    use vanaspati::{SoilWater, daily_water_balance, vpd_stomatal_factor};
+
+    // Start with wet soil
+    let mut soil = SoilWater::loam();
+    let vpd = 1.5_f32;
+
+    // Simulate 60 dry days — stomatal conductance should decrease
+    let mut conductances = Vec::new();
+    for _ in 0..60 {
+        let rwc = soil.relative_water_content();
+        let drought_f = drought_stomatal_factor(rwc, 0.0, 1.0, StomatalBehavior::Isohydric);
+        let vpd_f = vpd_stomatal_factor(vpd, 1.5);
+        let gs = ball_berry_conductance(0.02, 9.0, 15.0, 0.6, 400.0) * drought_f * vpd_f;
+        conductances.push(gs);
+
+        // Transpire based on conductance
+        let e_mmol = transpiration_rate(gs, vpd, 101.3);
+        let e_mm = e_mmol * 0.018 * 3600.0 * 12.0 / 1000.0; // rough: mmol/m²/s → mm/day (12h)
+        daily_water_balance(&mut soil, 0.0, e_mm, 2.0);
+    }
+
+    assert!(
+        conductances.last().unwrap() < conductances.first().unwrap(),
+        "conductance should decrease as soil dries"
+    );
+}
+
+#[test]
+fn water_rainfall_refills_soil() {
+    use vanaspati::{SoilWater, daily_water_balance, rainfall_to_water_supply};
+
+    let mut soil = SoilWater::loam();
+    // Dry out
+    for _ in 0..30 {
+        daily_water_balance(&mut soil, 0.0, 5.0, 2.0);
+    }
+    let dry_rwc = soil.relative_water_content();
+    assert!(dry_rwc < 0.5);
+
+    // Rainstorm: badal says 10 mm/hr for 3 hours
+    let rain = rainfall_to_water_supply(10.0, 3.0); // 30 mm
+    daily_water_balance(&mut soil, rain, 0.0, 0.0);
+    assert!(
+        soil.relative_water_content() > dry_rwc,
+        "rain should refill"
+    );
+}
