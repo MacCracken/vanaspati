@@ -285,3 +285,47 @@ fn bridge_et_cooling_improves_photosynthesis_in_heat() {
         "ET cooling should improve photosynthesis in heat"
     );
 }
+
+// --- Decomposition integration tests ---
+
+#[test]
+fn biomass_to_litter_to_nitrogen_pipeline() {
+    use vanaspati::{LitterType, daily_decomposition_rate, mass_decomposed, nitrogen_release};
+
+    // Oak drops 50 kg of leaves in autumn
+    let leaf_litter_kg = BiomassPool::oak().leaf_kg;
+
+    // Decompose for a year at warm, moist conditions
+    let k = daily_decomposition_rate(LitterType::Leaf, 20.0, 0.6);
+    let decomposed = mass_decomposed(leaf_litter_kg, k, 365.0);
+    assert!(decomposed > 0.0, "leaves should decompose");
+    assert!(decomposed < leaf_litter_kg, "not all gone in one year");
+
+    // Nitrogen released (broadleaf C:N ≈ 40)
+    let n = nitrogen_release(decomposed, 40.0);
+    assert!(n > 0.0, "decomposition should release nitrogen");
+}
+
+#[test]
+fn frozen_soil_stops_decomposition() {
+    use vanaspati::{LitterType, daily_decomposition_rate, mass_decomposed};
+
+    let k = daily_decomposition_rate(LitterType::Leaf, -5.0, 0.6);
+    assert_eq!(k, 0.0);
+    let remaining = mass_decomposed(100.0, k, 365.0);
+    assert_eq!(remaining, 0.0, "no decomposition when frozen");
+}
+
+#[test]
+fn wood_persists_longer_than_leaves() {
+    use vanaspati::{LitterType, daily_decomposition_rate, half_life_days};
+
+    let leaf_k = daily_decomposition_rate(LitterType::Leaf, 20.0, 0.5);
+    let wood_k = daily_decomposition_rate(LitterType::Wood, 20.0, 0.5);
+    let leaf_half = half_life_days(leaf_k);
+    let wood_half = half_life_days(wood_k);
+    assert!(
+        wood_half > leaf_half * 5.0,
+        "wood should persist much longer than leaves"
+    );
+}

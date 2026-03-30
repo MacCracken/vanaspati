@@ -18,6 +18,7 @@
 //! | [`dispersal`] | Seed dispersal methods, distance kernels, seed profiles |
 //! | [`biomass`] | Carbon allocation across plant organs, allometric scaling |
 //! | [`mortality`] | Age, drought, frost, competition mortality models |
+//! | [`decomposition`] | Litter decay, temperature/moisture factors, nutrient release |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
 //! | [`bridge`] | Cross-crate conversions for badal, ushma, jantu |
 //! | [`error`] | Error types |
@@ -42,6 +43,7 @@
 
 pub mod biomass;
 pub mod bridge;
+pub mod decomposition;
 pub mod dispersal;
 pub mod ecosystem;
 pub mod error;
@@ -88,6 +90,13 @@ pub use biomass::{
 // Mortality
 pub use mortality::{
     MortalityCause, age_mortality_rate, drought_mortality, frost_mortality, self_thinning_mortality,
+};
+
+// Decomposition
+pub use decomposition::{
+    LitterType, base_decomposition_rate, daily_decomposition_rate, half_life_days, mass_decomposed,
+    moisture_decomposition_factor, nitrogen_release, remaining_mass,
+    temperature_decomposition_factor,
 };
 
 // Ecosystem

@@ -1,13 +1,14 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
-    AllocationStrategy, DispersalMethod, GrowthModel, PhotosynthesisPathway, PollinationMethod,
-    RootSystem, Season, age_mortality_rate, allocate, canopy_to_habitat_score, competition_growth,
-    daylight_hours_at, dispersal_distance, dispersal_probability, drought_mortality,
-    frost_mortality, frost_risk_to_mortality, growing_conditions_to_growth_multiplier,
-    growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
-    net_primary_productivity, pathway_params, photosynthesis_rate, pollination_probability,
-    self_thinning_mortality, shannon_diversity, soil_temperature_to_root_activity, solar_to_par,
-    temperature_factor, temperature_factor_c4, temperature_factor_cam, wind_to_dispersal_speed,
+    AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhotosynthesisPathway,
+    PollinationMethod, RootSystem, Season, age_mortality_rate, allocate, canopy_to_habitat_score,
+    competition_growth, daily_decomposition_rate, daylight_hours_at, dispersal_distance,
+    dispersal_probability, drought_mortality, frost_mortality, frost_risk_to_mortality,
+    growing_conditions_to_growth_multiplier, growth_modifier_at, growth_stage, height_to_diameter,
+    height_to_leaf_area, net_primary_productivity, nitrogen_release, pathway_params,
+    photosynthesis_rate, pollination_probability, remaining_mass, self_thinning_mortality,
+    shannon_diversity, soil_temperature_to_root_activity, solar_to_par, temperature_factor,
+    temperature_factor_c4, temperature_factor_cam, wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -235,6 +236,20 @@ fn bench_bridge(c: &mut Criterion) {
     });
 }
 
+fn bench_decomposition(c: &mut Criterion) {
+    c.bench_function("daily_decomposition_rate", |b| {
+        b.iter(|| {
+            daily_decomposition_rate(black_box(LitterType::Leaf), black_box(20.0), black_box(0.6))
+        })
+    });
+    c.bench_function("remaining_mass", |b| {
+        b.iter(|| remaining_mass(black_box(100.0), black_box(0.004), black_box(365.0)))
+    });
+    c.bench_function("nitrogen_release", |b| {
+        b.iter(|| nitrogen_release(black_box(10.0), black_box(40.0)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -247,5 +262,6 @@ criterion_group!(
     bench_mortality,
     bench_ecosystem,
     bench_bridge,
+    bench_decomposition,
 );
 criterion_main!(benches);
