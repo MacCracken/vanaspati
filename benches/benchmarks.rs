@@ -1,17 +1,18 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
     AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhenologicalEvent,
-    PhotosynthesisPathway, PollinationMethod, RootSystem, Season, accumulated_gdd,
-    age_mortality_rate, allocate, ball_berry_conductance, canopy_to_habitat_score,
-    competition_growth, daily_decomposition_rate, daylight_hours_at, dispersal_distance,
-    dispersal_probability, drought_mortality, event_reached, frost_mortality,
+    PhotosynthesisPathway, PollinationMethod, RootSystem, Season, SoilType, SoilWater,
+    accumulated_gdd, age_mortality_rate, allocate, ball_berry_conductance, canopy_to_habitat_score,
+    competition_growth, daily_decomposition_rate, daily_water_balance, daylight_hours_at,
+    dispersal_distance, dispersal_probability, drought_mortality, event_reached, frost_mortality,
     frost_risk_to_mortality, growing_conditions_to_growth_multiplier, growing_degree_days,
-    growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
+    growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area, infiltration_rate,
     net_primary_productivity, nitrogen_release, pathway_params, phenological_progress,
-    photosynthesis_rate, pollination_probability, remaining_mass, self_thinning_mortality,
-    shannon_diversity, soil_temperature_to_root_activity, solar_to_par, temperature_factor,
-    temperature_factor_c4, temperature_factor_cam, total_leaf_conductance, transpiration_rate,
-    vapor_pressure_deficit, wind_to_dispersal_speed,
+    photosynthesis_rate, pollination_probability, remaining_mass, saturated_conductivity,
+    self_thinning_mortality, shannon_diversity, soil_evaporation,
+    soil_temperature_to_root_activity, solar_to_par, temperature_factor, temperature_factor_c4,
+    temperature_factor_cam, total_leaf_conductance, transpiration_rate, vapor_pressure_deficit,
+    wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -294,6 +295,35 @@ fn bench_stomata(c: &mut Criterion) {
     });
 }
 
+fn bench_water(c: &mut Criterion) {
+    c.bench_function("soil_water_new_loam", |b| {
+        b.iter(|| SoilWater::new(black_box(SoilType::Loam), black_box(1.0)))
+    });
+    c.bench_function("saturated_conductivity", |b| {
+        b.iter(|| saturated_conductivity(black_box(SoilType::Loam)))
+    });
+    c.bench_function("infiltration_rate", |b| {
+        b.iter(|| {
+            infiltration_rate(
+                black_box(SoilType::Loam),
+                black_box(100.0),
+                black_box(500.0),
+                black_box(20.0),
+            )
+        })
+    });
+    c.bench_function("soil_evaporation", |b| {
+        b.iter(|| soil_evaporation(black_box(5.0), black_box(200.0), black_box(270.0)))
+    });
+    c.bench_function("daily_water_balance", |b| {
+        let mut soil = SoilWater::loam();
+        b.iter(|| {
+            soil.water_content_mm = soil.field_capacity_mm; // reset each iter
+            daily_water_balance(&mut soil, black_box(10.0), black_box(3.0), black_box(2.0))
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -309,5 +339,6 @@ criterion_group!(
     bench_decomposition,
     bench_phenology,
     bench_stomata,
+    bench_water,
 );
 criterion_main!(benches);

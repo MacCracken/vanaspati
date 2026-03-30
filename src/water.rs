@@ -196,10 +196,10 @@ impl SoilWater {
         actual
     }
 
-    /// Gravity drainage — water above field capacity drains at a rate
-    /// determined by soil type. Returns water drained (mm).
+    /// Gravity drainage — water above field capacity drains exponentially
+    /// toward field capacity. Returns water drained (mm).
     ///
-    /// Drainage rate fraction per day:
+    /// Drainage rate fraction per day (proportional to K_sat, empirically adjusted):
     /// Sand 0.6, SandyLoam 0.4, Loam 0.25, ClayLoam 0.15, Clay 0.08.
     ///
     /// - `fraction_of_day` — time step as fraction of a day (1.0 = full day)
@@ -249,9 +249,11 @@ pub fn saturated_conductivity(soil_type: SoilType) -> f32 {
     k
 }
 
-/// Infiltration rate (mm/hr) using simplified Green-Ampt.
+/// Infiltration rate (mm/hr) using simplified Green-Ampt (Philip approximation).
 ///
 /// `rate = K_sat × (1 + deficit / depth)`
+///
+/// Cumulative infiltration F is not tracked; suitable for daily timestep models.
 ///
 /// Higher deficit = faster infiltration (dry soil pulls water in).
 /// Capped at rainfall rate (can't infiltrate more than falls).
@@ -497,6 +499,13 @@ mod tests {
         let s = SoilWater::loam();
         let vwc = s.volumetric_water_content();
         assert!((vwc - 0.27).abs() < 0.01, "loam FC = 0.27, got {vwc}");
+    }
+
+    #[test]
+    fn volumetric_zero_depth() {
+        let mut s = SoilWater::loam();
+        s.depth_m = 0.0;
+        assert_eq!(s.volumetric_water_content(), 0.0);
     }
 
     // --- Saturation / wilting ---
@@ -807,5 +816,20 @@ mod tests {
             (storage_change - balance).abs() < 0.1,
             "water balance should be conserved: storage_change={storage_change}, flux_balance={balance}"
         );
+    }
+
+    #[test]
+    fn balance_saturated_drain_and_transpire() {
+        let mut s = SoilWater::loam();
+        s.water_content_mm = s.saturation_mm;
+        let before = s.water_content_mm;
+        let f = daily_water_balance(&mut s, 0.0, 5.0, 2.0);
+        assert!(f.drainage_mm > 0.0, "should drain excess");
+        assert!(f.transpiration_mm > 0.0, "should also transpire");
+        assert!(s.water_content_mm < before);
+        // Conservation still holds
+        let change = s.water_content_mm - before;
+        let flux = -f.drainage_mm - f.transpiration_mm - f.evaporation_mm;
+        assert!((change - flux).abs() < 0.1);
     }
 }
