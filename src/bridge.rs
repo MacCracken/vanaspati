@@ -249,6 +249,23 @@ pub fn soil_water_to_growth_stress(relative_water_content: f64) -> f32 {
     crate::growth::water_stress_growth_factor(relative_water_content as f32)
 }
 
+/// Nitrogen stress factor on growth from plant tissue N concentration (0.0–1.0).
+///
+/// Wraps `nitrogen::nitrogen_stress_factor` for cross-crate use.
+///
+/// Connects to: `GrowthModel::daily_growth()` (multiply result by this)
+///
+/// - `plant_n_concentration` — current tissue N (kg N / kg biomass)
+/// - `critical_n_concentration` — minimum N for unstressed growth (kg N / kg biomass)
+#[must_use]
+#[inline]
+pub fn nitrogen_to_growth_stress(plant_n_concentration: f64, critical_n_concentration: f64) -> f32 {
+    crate::nitrogen::nitrogen_stress_factor(
+        plant_n_concentration as f32,
+        critical_n_concentration as f32,
+    )
+}
+
 // ── Ushma bridges (thermodynamics) ────────────────────────────────────
 
 /// Soil temperature to root activity scaling factor (0.0–1.0).
@@ -737,6 +754,24 @@ mod tests {
     fn soil_water_growth_stress_moderate() {
         let f = soil_water_to_growth_stress(0.3);
         assert!((f - 0.5).abs() < 0.01, "got {f}");
+    }
+
+    // ── Nitrogen stress bridge tests ─────────────────────────────────
+
+    #[test]
+    fn nitrogen_growth_stress_sufficient() {
+        assert_eq!(nitrogen_to_growth_stress(0.015, 0.012), 1.0);
+    }
+
+    #[test]
+    fn nitrogen_growth_stress_deficient() {
+        let f = nitrogen_to_growth_stress(0.006, 0.012);
+        assert!((f - 0.5).abs() < 0.01, "got {f}");
+    }
+
+    #[test]
+    fn nitrogen_growth_stress_zero() {
+        assert_eq!(nitrogen_to_growth_stress(0.0, 0.012), 0.0);
     }
 
     #[test]

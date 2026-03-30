@@ -22,6 +22,7 @@
 //! | [`water`] | Soil water storage, infiltration, drainage, evaporation |
 //! | [`stomata`] | Ball-Berry stomatal conductance, transpiration, VPD, boundary layer |
 //! | [`phenology`] | Growing degree days, chilling hours, lifecycle event triggers |
+//! | [`nitrogen`] | Soil N pools, mineralization, uptake, leaching, N stress |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
 //! | [`bridge`] | Cross-crate conversions for badal, ushma, jantu |
 //! | [`error`] | Error types |
@@ -54,6 +55,7 @@ pub mod growth;
 /// Integration APIs for downstream consumers (soorat rendering).
 pub mod integration;
 pub mod mortality;
+pub mod nitrogen;
 pub mod phenology;
 pub mod photosynthesis;
 pub mod pollination;
@@ -128,6 +130,13 @@ pub use decomposition::{
     temperature_decomposition_factor,
 };
 
+// Nitrogen
+pub use nitrogen::{
+    NitrogenFluxes, SoilNitrogen, critical_n_concentration, daily_nitrogen_balance,
+    mineralization_rate, nitrogen_leaching, nitrogen_stress_factor, nitrogen_uptake,
+    plant_n_demand,
+};
+
 // Ecosystem
 pub use ecosystem::{competition_growth, net_primary_productivity, shannon_diversity};
 
@@ -135,7 +144,7 @@ pub use ecosystem::{competition_growth, net_primary_productivity, shannon_divers
 pub use bridge::{
     atmosphere_to_photosynthesis_inputs, canopy_to_habitat_score, evapotranspiration_cooling,
     frost_risk_to_mortality, frost_to_dormancy, growing_conditions_to_growth_multiplier,
-    humidity_to_vpd, rainfall_to_water_supply, seed_production_to_food,
+    humidity_to_vpd, nitrogen_to_growth_stress, rainfall_to_water_supply, seed_production_to_food,
     soil_temperature_to_growth_factor, soil_temperature_to_root_activity,
     soil_water_to_growth_stress, soil_water_to_photosynthesis_stress, solar_to_par,
     wet_bulb_to_heat_stress, wind_to_boundary_conductance, wind_to_dispersal_speed,

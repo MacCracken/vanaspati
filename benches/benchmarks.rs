@@ -1,18 +1,20 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
     AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhenologicalEvent,
-    PhotosynthesisPathway, PollinationMethod, RootSystem, Season, SoilType, SoilWater,
-    accumulated_gdd, age_mortality_rate, allocate, ball_berry_conductance, canopy_to_habitat_score,
-    competition_growth, daily_decomposition_rate, daily_water_balance, daylight_hours_at,
-    dispersal_distance, dispersal_probability, drought_mortality, event_reached, frost_mortality,
-    frost_risk_to_mortality, growing_conditions_to_growth_multiplier, growing_degree_days,
-    growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area, infiltration_rate,
-    net_primary_productivity, nitrogen_release, pathway_params, phenological_progress,
-    photosynthesis_rate, pollination_probability, remaining_mass, saturated_conductivity,
-    self_thinning_mortality, shannon_diversity, soil_evaporation,
-    soil_temperature_to_root_activity, solar_to_par, temperature_factor, temperature_factor_c4,
-    temperature_factor_cam, total_leaf_conductance, transpiration_rate, vapor_pressure_deficit,
-    water_stress_factor, water_stress_growth_factor, wind_to_dispersal_speed,
+    PhotosynthesisPathway, PollinationMethod, RootSystem, Season, SoilNitrogen, SoilType,
+    SoilWater, accumulated_gdd, age_mortality_rate, allocate, ball_berry_conductance,
+    canopy_to_habitat_score, competition_growth, daily_decomposition_rate, daily_nitrogen_balance,
+    daily_water_balance, daylight_hours_at, dispersal_distance, dispersal_probability,
+    drought_mortality, event_reached, frost_mortality, frost_risk_to_mortality,
+    growing_conditions_to_growth_multiplier, growing_degree_days, growth_modifier_at, growth_stage,
+    height_to_diameter, height_to_leaf_area, infiltration_rate, mineralization_rate,
+    net_primary_productivity, nitrogen_release, nitrogen_stress_factor, nitrogen_uptake,
+    pathway_params, phenological_progress, photosynthesis_rate, pollination_probability,
+    remaining_mass, saturated_conductivity, self_thinning_mortality, shannon_diversity,
+    soil_evaporation, soil_temperature_to_root_activity, solar_to_par, temperature_factor,
+    temperature_factor_c4, temperature_factor_cam, total_leaf_conductance, transpiration_rate,
+    vapor_pressure_deficit, water_stress_factor, water_stress_growth_factor,
+    wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -335,6 +337,40 @@ fn bench_water(c: &mut Criterion) {
     });
 }
 
+fn bench_nitrogen(c: &mut Criterion) {
+    c.bench_function("mineralization_rate", |b| {
+        b.iter(|| mineralization_rate(black_box(0.5), black_box(25.0), black_box(0.6)))
+    });
+    c.bench_function("nitrogen_uptake", |b| {
+        b.iter(|| {
+            nitrogen_uptake(
+                black_box(0.001),
+                black_box(0.01),
+                black_box(500.0),
+                black_box(0.8),
+            )
+        })
+    });
+    c.bench_function("nitrogen_stress_factor", |b| {
+        b.iter(|| nitrogen_stress_factor(black_box(0.010), black_box(0.012)))
+    });
+    c.bench_function("daily_nitrogen_balance", |b| {
+        let mut sn = SoilNitrogen::forest();
+        b.iter(|| {
+            sn = SoilNitrogen::forest(); // reset
+            daily_nitrogen_balance(
+                &mut sn,
+                black_box(20.0),
+                black_box(0.6),
+                black_box(0.0005),
+                black_box(200.0),
+                black_box(10.0),
+                black_box(200.0),
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -351,5 +387,6 @@ criterion_group!(
     bench_phenology,
     bench_stomata,
     bench_water,
+    bench_nitrogen,
 );
 criterion_main!(benches);

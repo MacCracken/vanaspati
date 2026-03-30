@@ -538,3 +538,120 @@ fn bridge_water_stress_matches_direct() {
     let direct_photo = water_stress_factor(rwc);
     assert!((bridge_photo - direct_photo).abs() < 0.01);
 }
+
+// --- Nitrogen integration tests ---
+
+#[test]
+fn decomposition_feeds_nitrogen_pool() {
+    use vanaspati::{
+        LitterType, SoilNitrogen, daily_decomposition_rate, daily_nitrogen_balance,
+        mass_decomposed, nitrogen_release,
+    };
+
+    let mut soil_n = SoilNitrogen::forest();
+    let initial_available = soil_n.available_n;
+
+    // Decompose 10 kg leaf litter for 30 days (warm, moist)
+    let k = daily_decomposition_rate(LitterType::Leaf, 25.0, 0.6);
+    let decomposed = mass_decomposed(10.0, k, 30.0);
+    let n_released = nitrogen_release(decomposed, 40.0); // C:N = 40
+
+    // Add released N to organic pool (litter N enters organic first)
+    soil_n.add_organic(n_released);
+
+    // Run 30 days of mineralization to convert some organic → available
+    for _ in 0..30 {
+        daily_nitrogen_balance(&mut soil_n, 25.0, 0.6, 0.0, 0.0, 0.0, 200.0);
+    }
+
+    assert!(
+        soil_n.available_n > initial_available,
+        "litter decomposition should eventually increase available N"
+    );
+}
+
+#[test]
+fn nitrogen_limits_growth_over_time() {
+    use vanaspati::{
+        GrowthModel, SoilNitrogen, daily_nitrogen_balance, nitrogen_stress_factor,
+        water_stress_growth_factor,
+    };
+
+    let oak = GrowthModel::oak();
+    let mut soil_n = SoilNitrogen::poor(); // low N
+    let critical_n = 0.012; // broadleaf
+
+    let mut height = oak.initial_height;
+    let mut plant_n = 0.010; // slightly below critical
+    let plant_biomass = 100.0; // kg (rough)
+
+    // 180 days — track growth with N limitation
+    let mut heights = vec![height];
+    for _ in 0..180 {
+        // N balance
+        let demand = 0.0002; // modest demand
+        let fluxes = daily_nitrogen_balance(&mut soil_n, 20.0, 0.5, demand, 50.0, 5.0, 200.0);
+
+        // Update plant N concentration
+        if plant_biomass > 0.0 {
+            plant_n = (plant_n * plant_biomass + fluxes.plant_uptake) / plant_biomass;
+        }
+
+        // Growth limited by N
+        let n_stress = nitrogen_stress_factor(plant_n, critical_n);
+        let water_stress = water_stress_growth_factor(1.0); // assume wet
+        let base_growth = oak.daily_growth(height);
+        height += base_growth * n_stress * water_stress;
+        heights.push(height);
+    }
+
+    // With poor soil, growth should be slower than potential
+    let actual_final = *heights.last().unwrap();
+    let potential_final = oak.height_at_day(180.0);
+    assert!(
+        actual_final < potential_final,
+        "N-limited growth should be less than potential: actual={actual_final}, potential={potential_final}"
+    );
+}
+
+#[test]
+fn nitrogen_leaching_coupled_to_water_drainage() {
+    use vanaspati::{SoilNitrogen, SoilWater, daily_nitrogen_balance, daily_water_balance};
+
+    let mut soil_n = SoilNitrogen::fertile();
+    let mut soil_w = SoilWater::loam();
+
+    // Saturate soil first
+    soil_w.water_content_mm = soil_w.saturation_mm;
+
+    let initial_n = soil_n.available_n;
+
+    // Heavy rain day → drainage → leaching
+    let w_fluxes = daily_water_balance(&mut soil_w, 50.0, 0.0, 0.0);
+    let n_fluxes = daily_nitrogen_balance(
+        &mut soil_n,
+        20.0,
+        soil_w.relative_water_content(),
+        0.0,
+        0.0,
+        w_fluxes.drainage_mm,
+        soil_w.water_content_mm,
+    );
+
+    assert!(n_fluxes.leaching > 0.0, "drainage should cause N leaching");
+    assert!(
+        soil_n.available_n < initial_n,
+        "available N should decrease from leaching"
+    );
+}
+
+#[test]
+fn bridge_nitrogen_stress_matches_direct() {
+    use vanaspati::{nitrogen_stress_factor, nitrogen_to_growth_stress};
+
+    let plant_n = 0.008;
+    let critical = 0.012;
+    let bridge = nitrogen_to_growth_stress(plant_n as f64, critical as f64);
+    let direct = nitrogen_stress_factor(plant_n, critical);
+    assert!((bridge - direct).abs() < 0.01);
+}
