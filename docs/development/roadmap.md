@@ -13,86 +13,19 @@ Vanaspati does NOT own:
 - **Weather/climate** -> badal (weather drives plant growth via bridges)
 - **Sound synthesis** -> garjan (foliage rustling via garjan's bridge)
 
-## V0.1.0 — Foundation (done)
-
-### growth
-- [x] GrowthStage enum (Seed, Germination, Seedling, Vegetative, Flowering, Fruiting, Senescence, Dormant)
-- [x] GrowthModel struct (logistic growth curve)
-- [x] Factory presets (oak, bamboo, grass)
-- [x] `height_at_day()`, `daily_growth()` methods
-
-### photosynthesis
-- [x] Light response curve (`photosynthesis_rate`)
-- [x] Light compensation point calculation
-- [x] Water use efficiency
-- [x] Temperature factor (bell curve, optimum ~25C for C3)
-
-### season
-- [x] Season enum (Spring, Summer, Autumn, Winter)
-- [x] Day-of-year to season mapping (northern hemisphere)
-- [x] Daylight hours by season
-- [x] Growth modifier (0.0-1.0)
-
-### root
-- [x] RootType enum (Taproot, Fibrous, Adventitious)
-- [x] RootSystem struct with depth, spread, water uptake
-- [x] Factory presets (oak taproot, grass fibrous)
-- [x] Stabilization factor
-
-### pollination
-- [x] PollinationMethod enum (Wind, Insect, Bird, Water, SelfPollinating)
-- [x] Distance-based pollination probability
-
-### ecosystem
-- [x] Lotka-Volterra competition model
-- [x] Shannon-Wiener diversity index
-- [x] Net primary productivity
-
 ---
 
-## Cross-Crate Bridges
+## Backlog
 
-- [x] **`bridge.rs` module** — primitive-value conversions for cross-crate botany (done: 13 functions)
-- [x] **badal bridge**: solar_to_par, atmosphere_to_photosynthesis_inputs, rainfall_to_water_supply, frost_risk_to_mortality, frost_to_dormancy, wind_to_dispersal_speed, growing_conditions_to_growth_multiplier (done)
-- [x] **jantu bridge**: canopy_to_habitat_score (Beer-Lambert LAI), seed_production_to_food (log saturation) (done)
-- [x] **ushma bridge**: soil_temperature_to_root_activity, soil_temperature_to_growth_factor, evapotranspiration_cooling, wet_bulb_to_heat_stress (done)
+> Not scheduled — demand-gated.
 
----
-
-## Soorat Integration (`integration/soorat.rs`)
-
-> Feature-gated `soorat-compat` — structured visualization types for soorat rendering
-
-- [ ] **`integration/soorat.rs` module** — visualization data structures
-- [ ] **Growth stage visualization**: plant structure (trunk, branches, canopy) with growth parameters for procedural mesh generation
-- [ ] **Root system**: branching structure with depth/spread for line rendering
-- [ ] **Ecosystem map**: species distribution grid with density values for heatmap rendering
-- [ ] **Seasonal color**: phenology stage -> foliage color palette for material tinting
-
----
-
-## Future
-
-> Not scheduled — demand-gated. Prioritized by domain research (P(-1) audit, 2026-03-29).
-
-### High Priority (biggest realism gains)
+### High Priority
 
 - [ ] **Water/soil moisture system** — precipitation, soil water storage, root uptake, drought stress on growth/photosynthesis. Single biggest missing piece — water is the primary limiting factor for plant growth in most terrestrial ecosystems
 - [ ] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
-- [x] **Seed dispersal** — wind, animal, gravity, water, explosive dispersal with exponential decay kernels (done: V0.2.0)
-- [x] **Mortality and disturbance** — age (Weibull), drought (quadratic deficit), frost (logistic), self-thinning (Yoda's -3/2) (done: V0.2.0). Remaining: fire, disease, windthrow
-- [x] **Phenology (growing degree days)** — GDD accumulation, chilling hours (Utah model), event thresholds, dormancy break, senescence/dormancy triggers (photoperiod + temp) (done)
-
-### Medium Priority
-
-- [x] **Biomass allocation** — carbon partitioning (Balanced, StressedRoot, Reproductive), allometric scaling (height→diameter, height→leaf area) (done: V0.2.0)
-- [x] **Light competition / canopy structure** — Beer-Lambert: canopy_light_at_depth, understory_light_fraction, light_interception, shaded_photosynthesis_rate (done)
-- [x] C4/CAM photosynthesis pathways — PhotosynthesisPathway enum, pathway_params, type-specific temperature factors (done: V0.2.0)
-- [x] Southern hemisphere / latitude-parameterized seasons — sunrise equation, daylight_hours_at, growth_modifier_at, from_day_latitude (done: V0.2.0)
-- [x] **Decomposition and litter** — LitterType enum, Q10 temperature factor, moisture bell curve, exponential decay, nitrogen release with C:N ratio, half-life (done)
 - [ ] **Stomatal conductance** — Ball-Berry model coupling photosynthesis, water loss, and temperature
 
-### Lower Priority
+### Medium Priority
 
 - [ ] Mycorrhizal network (plant-fungal nutrient exchange)
 - [ ] Allelopathy (chemical competition between plants)
@@ -100,6 +33,41 @@ Vanaspati does NOT own:
 - [ ] **Herbivory pressure** — grazing/browsing biomass removal
 - [ ] **Vegetative reproduction** — runners, rhizomes, root sprouting (clonal spread)
 - [ ] **Succession dynamics** — pioneer vs. climax species, shade tolerance, lifespan classes
+- [ ] Remaining mortality types — fire, disease, windthrow
+
+---
+
+## Completed
+
+### V0.1.0 — Foundation
+
+- **growth** — GrowthStage enum, GrowthModel (logistic curve), presets (oak, bamboo, grass), `height_at_day`, `daily_growth`, `growth_stage`
+- **photosynthesis** — light response curve, light compensation point, water use efficiency, temperature factor (C3)
+- **season** — Season enum, day-of-year mapping (NH), daylight hours, growth modifiers
+- **root** — RootType enum, RootSystem with depth/spread/uptake, presets (oak, grass, mangrove), stabilization factor
+- **pollination** — PollinationMethod enum, distance-based probability
+- **ecosystem** — Lotka-Volterra competition, Shannon-Wiener diversity, net primary productivity
+- **error** — VanaspatiError enum, Result type
+- **logging** — optional tracing subscriber via `logging` feature
+
+### V0.1.1 — Scaffold Hardening (P-1)
+
+- Full `cargo fmt` cleanup, tracing on all operations, complete lib.rs re-exports
+- CHANGELOG, CONTRIBUTING, SECURITY, architecture overview documentation
+- Fixed: deprecated SPDX identifier, season test boundary, logging panic on double-init
+- Tests: 28 → 61, real benchmarks replacing placeholders
+
+### V0.2.0 — Modules & Bridges
+
+- **dispersal** — DispersalMethod enum (Wind, Animal, Gravity, Water, Explosive), SeedProfile presets, exponential decay kernel
+- **biomass** — BiomassPool with presets, AllocationStrategy, allometric scaling (height→diameter, height→leaf area)
+- **mortality** — MortalityCause enum, age (Weibull), drought (quadratic), frost (logistic), self-thinning (Yoda -3/2)
+- **photosynthesis** — C4/CAM pathways (PhotosynthesisPathway enum, pathway_params, type-specific temperature factors); Beer-Lambert canopy light competition (canopy_light_at_depth, understory_light_fraction, light_interception, shaded_photosynthesis_rate)
+- **season** — latitude-parameterized: daylight_hours_at (sunrise equation), growth_modifier_at, from_day_latitude (hemisphere-aware)
+- **decomposition** — LitterType enum, Q10 temperature factor, moisture bell curve, exponential decay, nitrogen release with C:N ratio, half-life
+- **phenology** — PhenologicalEvent enum, GDD accumulation, chilling hours (Utah model), event thresholds, dormancy break, senescence/dormancy triggers, event_to_growth_stage mapping
+- **bridge** — 13 cross-crate functions: badal (solar→PAR, weather→growth, frost→dormancy, wind→dispersal), ushma (soil temp→root activity, ET cooling, wet bulb stress), jantu (canopy→habitat, seeds→food)
+- **integration/soorat** — feature-gated visualization: GrowthVisualization, RootVisualization, EcosystemMap, SeasonalColor
 
 ---
 
