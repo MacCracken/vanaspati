@@ -9,6 +9,8 @@ pub enum MortalityCause {
     Competition,
     Disease,
     Frost,
+    Fire,
+    Windthrow,
 }
 
 /// Daily probability of death from aging (Weibull hazard function).
@@ -132,6 +134,89 @@ pub fn drought_mortality(water_available: f32, water_needed: f32) -> f32 {
     prob
 }
 
+/// Probability of fire death based on fire intensity and bark protection.
+///
+/// `p = intensity × (1.0 - bark_protection)`
+///
+/// Thick-barked species (bark_protection ~0.8) survive moderate fires.
+/// Thin-barked species (bark_protection ~0.1) are highly vulnerable.
+///
+/// - `fire_intensity` — fire intensity (0.0–1.0, where 1.0 is crown fire)
+/// - `bark_protection` — bark thickness protection factor (0.0–1.0)
+#[must_use]
+#[inline]
+pub fn fire_mortality(fire_intensity: f32, bark_protection: f32) -> f32 {
+    let intensity = fire_intensity.clamp(0.0, 1.0);
+    let protection = bark_protection.clamp(0.0, 1.0);
+    let prob = (intensity * (1.0 - protection)).clamp(0.0, 1.0);
+    tracing::trace!(fire_intensity, bark_protection, prob, "fire_mortality");
+    prob
+}
+
+/// Background disease mortality rate (probability per day).
+///
+/// `p = base_rate × stress_multiplier`
+///
+/// Disease risk increases when plants are stressed (drought, nutrient deficiency).
+/// Base rate is very low (~0.0001/day ≈ 3.6%/year for healthy plants).
+///
+/// Stress multiplier: 1.0 = healthy, up to 5.0 = severely stressed.
+///
+/// - `stress_level` — combined stress index (0.0=healthy, 1.0=severely stressed)
+#[must_use]
+#[inline]
+pub fn disease_mortality(stress_level: f32) -> f32 {
+    let base_rate = 0.0001_f32; // per day
+    let stress = stress_level.clamp(0.0, 1.0);
+    let multiplier = 1.0 + 4.0 * stress; // 1× to 5×
+    let prob = (base_rate * multiplier).clamp(0.0, 1.0);
+    tracing::trace!(stress_level, multiplier, prob, "disease_mortality");
+    prob
+}
+
+/// Probability of windthrow based on wind speed and tree properties.
+///
+/// `p = (speed / critical_speed)^3` for speed > threshold
+///
+/// Cubic response: gentle winds do nothing, strong winds are devastating.
+/// Critical speed depends on species (deep-rooted vs shallow-rooted)
+/// and soil conditions (waterlogged soil reduces anchorage).
+///
+/// - `wind_speed_ms` — wind speed at canopy height (m/s)
+/// - `critical_speed_ms` — wind speed that causes 50% mortality (m/s)
+/// - `soil_saturation` — soil moisture fraction (0.0–1.0, high = poor anchorage)
+#[must_use]
+pub fn windthrow_mortality(
+    wind_speed_ms: f32,
+    critical_speed_ms: f32,
+    soil_saturation: f32,
+) -> f32 {
+    if wind_speed_ms <= 0.0 || critical_speed_ms <= 0.0 {
+        return 0.0;
+    }
+    // Saturated soil reduces effective critical speed by up to 30%
+    let sat = soil_saturation.clamp(0.0, 1.0);
+    let effective_critical = critical_speed_ms * (1.0 - 0.3 * sat);
+    if effective_critical <= 0.0 {
+        return 1.0;
+    }
+    let ratio = wind_speed_ms / effective_critical;
+    if ratio <= 0.5 {
+        return 0.0; // below threshold
+    }
+    let prob = (ratio * ratio * ratio).clamp(0.0, 1.0);
+    tracing::trace!(
+        wind_speed_ms,
+        critical_speed_ms,
+        soil_saturation,
+        effective_critical,
+        ratio,
+        prob,
+        "windthrow_mortality"
+    );
+    prob
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,5 +324,97 @@ mod tests {
     #[test]
     fn drought_negative_available() {
         assert_eq!(drought_mortality(-10.0, 100.0), 1.0);
+    }
+
+    // --- fire mortality ---
+
+    #[test]
+    fn fire_no_intensity() {
+        assert_eq!(fire_mortality(0.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn fire_full_intensity_no_protection() {
+        assert!((fire_mortality(1.0, 0.0) - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn fire_full_intensity_full_protection() {
+        assert_eq!(fire_mortality(1.0, 1.0), 0.0);
+    }
+
+    #[test]
+    fn fire_thick_bark_survives_moderate() {
+        let p = fire_mortality(0.5, 0.8);
+        assert!(
+            p < 0.15,
+            "thick bark should mostly survive moderate fire, got {p}"
+        );
+    }
+
+    #[test]
+    fn fire_thin_bark_vulnerable() {
+        let thin = fire_mortality(0.5, 0.1);
+        let thick = fire_mortality(0.5, 0.8);
+        assert!(thin > thick);
+    }
+
+    // --- disease mortality ---
+
+    #[test]
+    fn disease_healthy_low_rate() {
+        let p = disease_mortality(0.0);
+        assert!(
+            p < 0.0002,
+            "healthy plant should have very low disease rate"
+        );
+    }
+
+    #[test]
+    fn disease_stressed_higher() {
+        let healthy = disease_mortality(0.0);
+        let stressed = disease_mortality(1.0);
+        assert!(stressed > healthy);
+    }
+
+    #[test]
+    fn disease_max_stress_rate() {
+        let p = disease_mortality(1.0);
+        // base 0.0001 × 5 = 0.0005
+        assert!((p - 0.0005).abs() < 0.0001, "got {p}");
+    }
+
+    // --- windthrow mortality ---
+
+    #[test]
+    fn windthrow_calm_is_zero() {
+        assert_eq!(windthrow_mortality(5.0, 30.0, 0.0), 0.0);
+    }
+
+    #[test]
+    fn windthrow_strong_wind() {
+        let p = windthrow_mortality(35.0, 30.0, 0.0);
+        assert!(
+            p > 0.5,
+            "wind above critical should cause high mortality, got {p}"
+        );
+    }
+
+    #[test]
+    fn windthrow_saturated_soil_worse() {
+        let dry = windthrow_mortality(25.0, 30.0, 0.0);
+        let wet = windthrow_mortality(25.0, 30.0, 0.9);
+        assert!(wet > dry, "wet soil should increase windthrow risk");
+    }
+
+    #[test]
+    fn windthrow_zero_wind() {
+        assert_eq!(windthrow_mortality(0.0, 30.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn windthrow_clamped_at_one() {
+        let p = windthrow_mortality(100.0, 20.0, 1.0);
+        assert_eq!(p, 1.0);
     }
 }

@@ -1,22 +1,24 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
-    AllocationStrategy, DispersalMethod, GrowthModel, HerbivoryType, LitterType, PhenologicalEvent,
-    PhotosynthesisPathway, PollinationMethod, RootSystem, Season, SoilNitrogen, SoilType,
-    SoilWater, SuccessionalStage, VegetativeMethod, accumulated_gdd, age_mortality_rate, allocate,
-    ball_berry_conductance, biomass_removal, canopy_to_habitat_score, clonal_area_m2,
+    AllocationStrategy, DispersalMethod, FireStrategy, GrowthModel, HerbivoryType, LitterType,
+    MycorrhizalType, PhenologicalEvent, PhotosynthesisPathway, PollinationMethod, RootSystem,
+    Season, SoilNitrogen, SoilType, SoilWater, SuccessionalStage, VegetativeMethod,
+    accumulated_gdd, age_mortality_rate, allocate, ball_berry_conductance, bark_protection,
+    biomass_removal, canopy_to_habitat_score, clonal_area_m2, colonization_rate,
     compensatory_growth_factor, competition_growth, daily_decomposition_rate,
-    daily_nitrogen_balance, daily_water_balance, daylight_hours_at, dispersal_distance,
-    dispersal_probability, drought_mortality, effective_growth_multiplier,
-    establishment_probability, event_reached, frost_mortality, frost_risk_to_mortality,
-    growing_conditions_to_growth_multiplier, growing_degree_days, growth_modifier_at, growth_stage,
-    height_to_diameter, height_to_leaf_area, herbivory_mortality, infiltration_rate,
-    mineralization_rate, net_primary_productivity, nitrogen_release, nitrogen_stress_factor,
-    nitrogen_uptake, pathway_params, phenological_progress, photosynthesis_rate,
-    pollination_probability, remaining_mass, resource_limited_ramets, saturated_conductivity,
-    self_thinning_mortality, shannon_diversity, soil_evaporation,
+    daily_nitrogen_balance, daily_water_balance, daylight_hours_at, disease_mortality,
+    dispersal_distance, dispersal_probability, drought_mortality, effective_growth_multiplier,
+    enhanced_n_uptake, establishment_probability, event_reached, fire_mortality, frost_mortality,
+    frost_risk_to_mortality, growing_conditions_to_growth_multiplier, growing_degree_days,
+    growth_inhibition, growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
+    herbivory_mortality, infiltration_rate, mineralization_rate, net_primary_productivity,
+    nitrogen_release, nitrogen_stress_factor, nitrogen_uptake, pathway_params,
+    phenological_progress, photosynthesis_rate, pollination_probability, remaining_mass,
+    resource_limited_ramets, resprout_vigor, saturated_conductivity, self_thinning_mortality,
+    serotinous_release, shannon_diversity, soil_concentration, soil_evaporation,
     soil_temperature_to_root_activity, solar_to_par, temperature_factor, temperature_factor_c4,
     temperature_factor_cam, total_leaf_conductance, transpiration_rate, vapor_pressure_deficit,
-    water_stress_factor, water_stress_growth_factor, wind_to_dispersal_speed,
+    water_stress_factor, water_stress_growth_factor, wind_to_dispersal_speed, windthrow_mortality,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -418,6 +420,67 @@ fn bench_reproduction(c: &mut Criterion) {
     });
 }
 
+fn bench_fire(c: &mut Criterion) {
+    c.bench_function("fire_mortality", |b| {
+        b.iter(|| fire_mortality(black_box(0.6), black_box(0.5)))
+    });
+    c.bench_function("bark_protection", |b| {
+        b.iter(|| bark_protection(black_box(FireStrategy::ThickBarked)))
+    });
+    c.bench_function("resprout_vigor", |b| {
+        b.iter(|| resprout_vigor(black_box(FireStrategy::Resprouter), black_box(0.5)))
+    });
+    c.bench_function("serotinous_release", |b| {
+        b.iter(|| {
+            serotinous_release(
+                black_box(FireStrategy::Serotinous),
+                black_box(1000.0),
+                black_box(0.7),
+            )
+        })
+    });
+}
+
+fn bench_mycorrhiza(c: &mut Criterion) {
+    c.bench_function("enhanced_n_uptake", |b| {
+        b.iter(|| {
+            enhanced_n_uptake(
+                black_box(0.001),
+                black_box(MycorrhizalType::Ectomycorrhizal),
+                black_box(0.7),
+            )
+        })
+    });
+    c.bench_function("colonization_rate", |b| {
+        b.iter(|| colonization_rate(black_box(MycorrhizalType::Arbuscular), black_box(0.3)))
+    });
+}
+
+fn bench_allelopathy(c: &mut Criterion) {
+    c.bench_function("soil_concentration", |b| {
+        b.iter(|| {
+            soil_concentration(
+                black_box(0.5),
+                black_box(0.01),
+                black_box(25.0),
+                black_box(0.6),
+            )
+        })
+    });
+    c.bench_function("growth_inhibition", |b| {
+        b.iter(|| growth_inhibition(black_box(0.5), black_box(5.0)))
+    });
+}
+
+fn bench_mortality_ext(c: &mut Criterion) {
+    c.bench_function("disease_mortality", |b| {
+        b.iter(|| disease_mortality(black_box(0.5)))
+    });
+    c.bench_function("windthrow_mortality", |b| {
+        b.iter(|| windthrow_mortality(black_box(25.0), black_box(30.0), black_box(0.5)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -438,5 +501,9 @@ criterion_group!(
     bench_herbivory,
     bench_succession,
     bench_reproduction,
+    bench_fire,
+    bench_mycorrhiza,
+    bench_allelopathy,
+    bench_mortality_ext,
 );
 criterion_main!(benches);

@@ -803,3 +803,129 @@ fn bridge_successional_advantage_crossover() {
     assert!(open < 1.0, "open → pioneer advantage");
     assert!(shade > 1.0, "shade → climax advantage");
 }
+
+// --- Fire ecology integration tests ---
+
+#[test]
+fn fire_survival_depends_on_strategy() {
+    use vanaspati::{FireStrategy, bark_protection, fire_mortality, resprout_vigor};
+
+    let intensity = 0.6;
+
+    // Thick-barked tree survives fire
+    let tb_mort = fire_mortality(intensity, bark_protection(FireStrategy::ThickBarked));
+    let tb_resprout = resprout_vigor(FireStrategy::ThickBarked, intensity);
+    assert!(tb_mort < 0.2, "thick bark should protect, got {tb_mort}");
+
+    // Sensitive tree dies
+    let sens_mort = fire_mortality(intensity, bark_protection(FireStrategy::Sensitive));
+    assert!(sens_mort > 0.5, "sensitive should die, got {sens_mort}");
+
+    // Resprouter regrows vigorously
+    let resp_vigor = resprout_vigor(FireStrategy::Resprouter, intensity);
+    assert!(resp_vigor > tb_resprout, "resprouter should regrow faster");
+}
+
+#[test]
+fn serotinous_release_after_fire() {
+    use vanaspati::{FireStrategy, post_fire_establishment, serotinous_release};
+
+    let seeds = serotinous_release(FireStrategy::Serotinous, 5000.0, 0.8);
+    assert!(seeds > 3000.0, "should release most of seed bank");
+
+    let advantage = post_fire_establishment(FireStrategy::Serotinous, 0.8);
+    assert!(
+        advantage > 2.0,
+        "serotinous should have strong post-fire advantage"
+    );
+}
+
+// --- Mycorrhizal integration tests ---
+
+#[test]
+fn mycorrhiza_enhances_nitrogen_uptake() {
+    use vanaspati::{
+        MycorrhizalType, SoilNitrogen, colonization_rate, enhanced_n_uptake, nitrogen_uptake,
+    };
+
+    let soil_n = SoilNitrogen::forest();
+    let base_uptake = nitrogen_uptake(0.001, soil_n.available_n, 200.0, 0.8);
+
+    // ECM colonization at low P
+    let col = colonization_rate(MycorrhizalType::Ectomycorrhizal, 0.2);
+    let enhanced = enhanced_n_uptake(base_uptake, MycorrhizalType::Ectomycorrhizal, col);
+
+    assert!(enhanced > base_uptake, "mycorrhiza should enhance uptake");
+    assert!(
+        enhanced < base_uptake * 2.0,
+        "enhancement should be reasonable, not doubling"
+    );
+}
+
+#[test]
+fn mycorrhiza_net_benefit_nutrient_limited() {
+    use vanaspati::{MycorrhizalType, net_benefit_ratio};
+
+    // N-limited forest → beneficial
+    let benefit = net_benefit_ratio(MycorrhizalType::Ectomycorrhizal, 0.7, 0.8);
+    assert!(
+        benefit > 1.0,
+        "should be beneficial when N-limited: {benefit}"
+    );
+
+    // Fertile soil → costly
+    let cost = net_benefit_ratio(MycorrhizalType::Ectomycorrhizal, 0.7, 0.1);
+    assert!(cost < 1.0, "should be costly when N-abundant: {cost}");
+}
+
+// --- Allelopathy integration tests ---
+
+#[test]
+fn allelopathy_suppresses_neighbor_growth() {
+    use vanaspati::{
+        AllelopathicPotency, allelopathic_input, growth_inhibition, soil_concentration,
+    };
+
+    // Black walnut (strong allelopathy) with 50 kg biomass
+    let input = allelopathic_input(50.0, AllelopathicPotency::Strong);
+
+    // Accumulate over 30 days (warm, moist)
+    let mut conc = 0.0;
+    for _ in 0..30 {
+        conc = soil_concentration(conc, input, 25.0, 0.6);
+    }
+    assert!(conc > 0.0, "should accumulate allelochemicals");
+
+    // Effect on sensitive neighbor
+    let inhibition = growth_inhibition(conc, 10.0);
+    assert!(
+        inhibition > 0.1,
+        "sensitive neighbor should be inhibited: {inhibition}"
+    );
+
+    // Tolerant neighbor less affected
+    let tolerant_inhib = growth_inhibition(conc, 1.0);
+    assert!(
+        tolerant_inhib < inhibition,
+        "tolerant should be less affected: tol={tolerant_inhib}, sens={inhibition}"
+    );
+}
+
+// --- Extended mortality integration tests ---
+
+#[test]
+fn mortality_types_compound() {
+    use vanaspati::{disease_mortality, drought_mortality, windthrow_mortality};
+
+    // Stressed plant: drought + disease + moderate wind
+    let drought_p = drought_mortality(30.0, 100.0); // 70% deficit
+    let disease_p = disease_mortality(0.7); // stressed
+    let wind_p = windthrow_mortality(20.0, 30.0, 0.8); // moderate wind, wet soil
+
+    // Combined survival probability
+    let survival = (1.0 - drought_p) * (1.0 - disease_p) * (1.0 - wind_p);
+    assert!(survival < 1.0, "combined stressors should reduce survival");
+    // Each factor should contribute
+    assert!(drought_p > 0.0, "drought should contribute");
+    assert!(disease_p > 0.0, "disease should contribute");
+}

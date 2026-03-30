@@ -24,6 +24,9 @@
 //! | [`phenology`] | Growing degree days, chilling hours, lifecycle event triggers |
 //! | [`nitrogen`] | Soil N pools, mineralization, uptake, leaching, N stress |
 //! | [`herbivory`] | Grazing/browsing biomass removal, compensatory growth |
+//! | [`fire`] | Fire adaptation strategies, bark protection, post-fire regeneration |
+//! | [`mycorrhiza`] | Plant-fungal symbiosis, nutrient enhancement, hyphal networks |
+//! | [`allelopathy`] | Chemical competition, allelochemical dose-response |
 //! | [`succession`] | Pioneer/climax dynamics, shade tolerance, establishment |
 //! | [`reproduction`] | Vegetative reproduction — runners, rhizomes, clonal spread |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
@@ -48,17 +51,20 @@
 //! assert!(hours > 15.0);
 //! ```
 
+pub mod allelopathy;
 pub mod biomass;
 pub mod bridge;
 pub mod decomposition;
 pub mod dispersal;
 pub mod ecosystem;
 pub mod error;
+pub mod fire;
 pub mod growth;
 pub mod herbivory;
 /// Integration APIs for downstream consumers (soorat rendering).
 pub mod integration;
 pub mod mortality;
+pub mod mycorrhiza;
 pub mod nitrogen;
 pub mod phenology;
 pub mod photosynthesis;
@@ -106,7 +112,26 @@ pub use biomass::{
 
 // Mortality
 pub use mortality::{
-    MortalityCause, age_mortality_rate, drought_mortality, frost_mortality, self_thinning_mortality,
+    MortalityCause, age_mortality_rate, disease_mortality, drought_mortality, fire_mortality,
+    frost_mortality, self_thinning_mortality, windthrow_mortality,
+};
+
+// Fire ecology
+pub use fire::{
+    FireStrategy, bark_protection, fire_return_interval_years, post_fire_establishment,
+    resprout_vigor, serotinous_release,
+};
+
+// Mycorrhiza
+pub use mycorrhiza::{
+    MycorrhizalType, carbon_cost_fraction, colonization_rate, enhanced_n_uptake, hyphal_reach_m,
+    net_benefit_ratio, nutrient_enhancement,
+};
+
+// Allelopathy
+pub use allelopathy::{
+    AllelopathicPotency, daily_input as allelopathic_input, germination_inhibition,
+    growth_inhibition, production_rate as allelopathic_production_rate, soil_concentration,
 };
 
 // Water

@@ -25,13 +25,13 @@ Vanaspati does NOT own:
 - [x] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
 ### Medium Priority
 
-- [ ] Mycorrhizal network (plant-fungal nutrient exchange)
-- [ ] Allelopathy (chemical competition between plants)
-- [ ] Fire ecology (fire-adapted species, post-fire regeneration)
+- [x] Mycorrhizal network (plant-fungal nutrient exchange)
+- [x] Allelopathy (chemical competition between plants)
+- [x] Fire ecology (fire-adapted species, post-fire regeneration)
 - [x] **Herbivory pressure** — grazing/browsing biomass removal
 - [x] **Vegetative reproduction** — runners, rhizomes, root sprouting (clonal spread)
 - [x] **Succession dynamics** — pioneer vs. climax species, shade tolerance, lifespan classes
-- [ ] Remaining mortality types — fire, disease, windthrow
+- [x] Remaining mortality types — fire, disease, windthrow
 
 ---
 
