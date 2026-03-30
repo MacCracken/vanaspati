@@ -19,6 +19,7 @@
 //! | [`biomass`] | Carbon allocation across plant organs, allometric scaling |
 //! | [`mortality`] | Age, drought, frost, competition mortality models |
 //! | [`decomposition`] | Litter decay, temperature/moisture factors, nutrient release |
+//! | [`water`] | Soil water storage, infiltration, drainage, evaporation |
 //! | [`stomata`] | Ball-Berry stomatal conductance, transpiration, VPD, boundary layer |
 //! | [`phenology`] | Growing degree days, chilling hours, lifecycle event triggers |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
@@ -59,6 +60,7 @@ pub mod pollination;
 pub mod root;
 pub mod season;
 pub mod stomata;
+pub mod water;
 
 #[cfg(feature = "logging")]
 pub mod logging;
@@ -97,6 +99,9 @@ pub use biomass::{
 pub use mortality::{
     MortalityCause, age_mortality_rate, drought_mortality, frost_mortality, self_thinning_mortality,
 };
+
+// Water
+pub use water::{SoilType, SoilWater, infiltration_rate, saturated_conductivity, soil_evaporation};
 
 // Stomata
 pub use stomata::{
