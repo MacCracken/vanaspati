@@ -80,6 +80,27 @@ Vanaspati does NOT own:
 - **bridge** — 15 cross-crate functions: badal (solar→PAR, weather→growth, frost→dormancy, wind→dispersal), ushma (soil temp→root activity, ET cooling, wet bulb stress), pravash (wind→boundary conductance, humidity→VPD), jantu (canopy→habitat, seeds→food)
 - **integration/soorat** — feature-gated visualization: GrowthVisualization, RootVisualization, EcosystemMap, SeasonalColor
 
+### [Unreleased] — Ecosystem Completion & Competitive Parity
+
+- **water** — SoilType/SoilWater, infiltration, drainage, transpiration, evaporation, daily_water_balance
+- **root** — root_zone_fraction, water_uptake_mm (root-limited water extraction)
+- **photosynthesis** — water_stress_factor, co2_factor (Michaelis-Menten CO₂ fertilization), photosynthesis_rate_co2
+- **growth** — water_stress_growth_factor (Hsiao 1973)
+- **nitrogen** — SoilNitrogen 2-pool model, mineralization, uptake, leaching, nitrogen_stress_factor, daily_nitrogen_balance
+- **respiration** — maintenance (Ryan 1991, N×Q10), growth (25% construction cost), partitioned organ-specific, NPP = GPP - Ra
+- **decomposition** — CENTURY-style SoilCarbon 3-pool SOM (active/slow/passive), daily_som_turnover, heterotrophic respiration
+- **lai** — LeafHabit enum, lai_from_biomass (SLA), seasonal_lai_multiplier (hemisphere-aware), drought/frost leaf loss, effective_lai
+- **evapotranspiration** — Penman-Monteith FAO-56, surface_resistance, reference_et, svp_slope
+- **pft** — PftType enum (7 types), PftParams complete parameterization (photosynthesis through mortality)
+- **herbivory** — HerbivoryType, biomass_removal, compensatory_growth_factor, herbivory_mortality
+- **succession** — SuccessionalStage, shade_tolerance, establishment_probability, effective_growth_multiplier
+- **reproduction** — VegetativeMethod, clonal spread, resource-limited ramets, parent cost
+- **fire** — FireStrategy, bark_protection, resprout_vigor, serotinous_release, post_fire_establishment
+- **mycorrhiza** — MycorrhizalType, nutrient_enhancement, colonization_rate, enhanced_n_uptake, net_benefit_ratio
+- **allelopathy** — AllelopathicPotency, soil_concentration, growth/germination_inhibition
+- **mortality** — fire_mortality, disease_mortality, windthrow_mortality
+- **bridge** — 23+ functions: fire_weather_risk, mycorrhiza_enhanced_uptake, allelopathy_growth_factor, herbivore_to_biomass_loss, light_to_successional_advantage, nitrogen/water stress bridges
+
 ---
 
 ## Consumers

@@ -1,22 +1,25 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
-    AllocationStrategy, DispersalMethod, FireStrategy, GrowthModel, HerbivoryType, LitterType,
-    MycorrhizalType, PhenologicalEvent, PhotosynthesisPathway, PollinationMethod, RootSystem,
-    Season, SoilNitrogen, SoilType, SoilWater, SuccessionalStage, VegetativeMethod,
-    accumulated_gdd, age_mortality_rate, allocate, ball_berry_conductance, bark_protection,
-    biomass_removal, canopy_to_habitat_score, clonal_area_m2, colonization_rate,
-    compensatory_growth_factor, competition_growth, daily_decomposition_rate,
-    daily_nitrogen_balance, daily_water_balance, daylight_hours_at, disease_mortality,
-    dispersal_distance, dispersal_probability, drought_mortality, effective_growth_multiplier,
-    enhanced_n_uptake, establishment_probability, event_reached, fire_mortality, frost_mortality,
+    AllocationStrategy, DispersalMethod, FireStrategy, GrowthModel, HerbivoryType, LeafHabit,
+    LitterType, MycorrhizalType, PftParams, PftType, PhenologicalEvent, PhotosynthesisPathway,
+    PollinationMethod, RootSystem, Season, SoilCarbon, SoilNitrogen, SoilType, SoilWater,
+    SuccessionalStage, VegetativeMethod, accumulated_gdd, age_mortality_rate, allocate,
+    ball_berry_conductance, bark_protection, biomass_removal, canopy_to_habitat_score,
+    clonal_area_m2, co2_factor, colonization_rate, compensatory_growth_factor, competition_growth,
+    daily_decomposition_rate, daily_nitrogen_balance, daily_som_turnover, daily_water_balance,
+    daylight_hours_at, disease_mortality, dispersal_distance, dispersal_probability,
+    drought_mortality, effective_growth_multiplier, effective_lai, enhanced_n_uptake,
+    establishment_probability, event_reached, fire_mortality, frost_mortality,
     frost_risk_to_mortality, growing_conditions_to_growth_multiplier, growing_degree_days,
-    growth_inhibition, growth_modifier_at, growth_stage, height_to_diameter, height_to_leaf_area,
-    herbivory_mortality, infiltration_rate, mineralization_rate, net_primary_productivity,
-    nitrogen_release, nitrogen_stress_factor, nitrogen_uptake, pathway_params,
-    phenological_progress, photosynthesis_rate, pollination_probability, remaining_mass,
-    resource_limited_ramets, resprout_vigor, saturated_conductivity, self_thinning_mortality,
-    serotinous_release, shannon_diversity, soil_concentration, soil_evaporation,
-    soil_temperature_to_root_activity, solar_to_par, temperature_factor, temperature_factor_c4,
+    growth_inhibition, growth_modifier_at, growth_respiration, growth_stage, height_to_diameter,
+    height_to_leaf_area, herbivory_mortality, infiltration_rate, lai_from_biomass,
+    maintenance_respiration, mineralization_rate, net_primary_productivity,
+    net_primary_productivity_carbon, nitrogen_release, nitrogen_stress_factor, nitrogen_uptake,
+    pathway_params, penman_monteith_et, phenological_progress, photosynthesis_rate,
+    pollination_probability, reference_et, remaining_mass, resource_limited_ramets, resprout_vigor,
+    saturated_conductivity, seasonal_lai_multiplier, self_thinning_mortality, serotinous_release,
+    shannon_diversity, soil_concentration, soil_evaporation, soil_temperature_to_root_activity,
+    solar_to_par, surface_resistance, temperature_factor, temperature_factor_c4,
     temperature_factor_cam, total_leaf_conductance, transpiration_rate, vapor_pressure_deficit,
     water_stress_factor, water_stress_growth_factor, wind_to_dispersal_speed, windthrow_mortality,
 };
@@ -481,6 +484,92 @@ fn bench_mortality_ext(c: &mut Criterion) {
     });
 }
 
+fn bench_respiration(c: &mut Criterion) {
+    c.bench_function("maintenance_respiration", |b| {
+        b.iter(|| maintenance_respiration(black_box(2000.0), black_box(0.004), black_box(25.0)))
+    });
+    c.bench_function("growth_respiration", |b| {
+        b.iter(|| growth_respiration(black_box(0.5)))
+    });
+    c.bench_function("net_primary_productivity_carbon", |b| {
+        b.iter(|| net_primary_productivity_carbon(black_box(0.10), black_box(0.04)))
+    });
+}
+
+fn bench_lai(c: &mut Criterion) {
+    c.bench_function("lai_from_biomass", |b| {
+        b.iter(|| lai_from_biomass(black_box(50.0), black_box(25.0), black_box(100.0)))
+    });
+    c.bench_function("seasonal_lai_multiplier", |b| {
+        b.iter(|| {
+            seasonal_lai_multiplier(
+                black_box(LeafHabit::Deciduous),
+                black_box(200),
+                black_box(45.0),
+            )
+        })
+    });
+    c.bench_function("effective_lai", |b| {
+        b.iter(|| {
+            effective_lai(
+                black_box(6.0),
+                black_box(8.0),
+                black_box(0.9),
+                black_box(1.0),
+                black_box(0.0),
+            )
+        })
+    });
+}
+
+fn bench_et(c: &mut Criterion) {
+    c.bench_function("penman_monteith_et", |b| {
+        b.iter(|| {
+            penman_monteith_et(
+                black_box(15.0),
+                black_box(1.5),
+                black_box(25.0),
+                black_box(1.5),
+                black_box(2.0),
+                black_box(70.0),
+                black_box(101.3),
+            )
+        })
+    });
+    c.bench_function("reference_et", |b| {
+        b.iter(|| {
+            reference_et(
+                black_box(15.0),
+                black_box(25.0),
+                black_box(1.5),
+                black_box(2.0),
+            )
+        })
+    });
+    c.bench_function("surface_resistance", |b| {
+        b.iter(|| surface_resistance(black_box(0.25), black_box(4.0)))
+    });
+}
+
+fn bench_co2_som(c: &mut Criterion) {
+    c.bench_function("co2_factor_c3", |b| {
+        b.iter(|| co2_factor(black_box(560.0), black_box(PhotosynthesisPathway::C3)))
+    });
+    c.bench_function("daily_som_turnover", |b| {
+        let mut sc = SoilCarbon::temperate_forest();
+        b.iter(|| {
+            sc = SoilCarbon::temperate_forest();
+            daily_som_turnover(&mut sc, black_box(0.005), black_box(20.0), black_box(0.5))
+        })
+    });
+}
+
+fn bench_pft(c: &mut Criterion) {
+    c.bench_function("pft_from_type", |b| {
+        b.iter(|| PftParams::from_type(black_box(PftType::TemperateBroadleafDeciduous)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -505,5 +594,10 @@ criterion_group!(
     bench_mycorrhiza,
     bench_allelopathy,
     bench_mortality_ext,
+    bench_respiration,
+    bench_lai,
+    bench_et,
+    bench_co2_som,
+    bench_pft,
 );
 criterion_main!(benches);

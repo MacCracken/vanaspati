@@ -929,3 +929,144 @@ fn mortality_types_compound() {
     assert!(drought_p > 0.0, "drought should contribute");
     assert!(disease_p > 0.0, "disease should contribute");
 }
+
+// --- Carbon budget integration tests ---
+
+#[test]
+fn carbon_budget_gpp_to_npp() {
+    use vanaspati::{
+        growth_respiration, maintenance_respiration, net_primary_productivity_carbon,
+        photosynthesis_rate, total_autotrophic_respiration,
+    };
+
+    // Oak tree: 2000 kg biomass, 0.4% N, 25°C
+    let gpp_umol = photosynthesis_rate(20.0, 0.05, 800.0); // µmol CO₂/m²/s
+    // Convert: µmol/m²/s × 12e-6 g/µmol × 3600 s/hr × 12 hr × 100 m² crown / 1000 g/kg
+    let gpp_kg_c = gpp_umol * 12e-6 * 3600.0 * 12.0 * 100.0 / 1000.0;
+
+    let r_m = maintenance_respiration(2000.0, 0.004, 25.0);
+    let r_g = growth_respiration(gpp_kg_c * 0.5); // assume 50% allocated to growth
+    let ra = total_autotrophic_respiration(r_m, r_g);
+    let npp = net_primary_productivity_carbon(gpp_kg_c, ra);
+
+    // NPP should be 40-60% of GPP for a healthy tree
+    let npp_fraction = npp / gpp_kg_c;
+    assert!(
+        (0.2..=0.8).contains(&npp_fraction),
+        "NPP/GPP ratio should be 0.4-0.6, got {npp_fraction}"
+    );
+}
+
+#[test]
+fn som_litter_decomposition_pipeline() {
+    use vanaspati::{
+        LitterType, SoilCarbon, daily_decomposition_rate, daily_som_turnover, mass_decomposed,
+    };
+
+    let mut soil_c = SoilCarbon::new(0.0, 0.0, 0.0);
+
+    // Simulate 1 year: daily leaf litter → decomposition → SOM
+    for _day in 0..365 {
+        let k = daily_decomposition_rate(LitterType::Leaf, 20.0, 0.5);
+        let decomposed = mass_decomposed(0.01, k, 1.0); // 10g litter/day
+        let litter_c = decomposed * 0.45; // 45% carbon
+        let _ = daily_som_turnover(&mut soil_c, litter_c, 20.0, 0.5);
+    }
+
+    assert!(soil_c.active > 0.0, "active pool should accumulate");
+    assert!(soil_c.slow > 0.0, "slow pool should receive transfers");
+    assert!(soil_c.total() > 0.0);
+}
+
+// --- LAI integration tests ---
+
+#[test]
+fn lai_drives_photosynthesis_and_et() {
+    use vanaspati::{
+        LeafHabit, ball_berry_conductance, canopy_light_at_depth, effective_lai, lai_from_biomass,
+        penman_monteith_et, seasonal_lai_multiplier, surface_resistance,
+    };
+
+    // Summer deciduous tree: 50 kg leaves, SLA=25, 100 m² crown
+    let lai_base = lai_from_biomass(50.0, 25.0, 100.0);
+    let seasonal = seasonal_lai_multiplier(LeafHabit::Deciduous, 200, 45.0);
+    let lai = effective_lai(lai_base, 7.0, seasonal, 1.0, 0.0);
+
+    // LAI drives light interception
+    let par_understory = canopy_light_at_depth(1000.0, lai, 0.5);
+    assert!(
+        par_understory < 200.0,
+        "dense canopy should block most light"
+    );
+
+    // LAI drives ET through surface resistance
+    let gs = ball_berry_conductance(0.02, 9.0, 15.0, 0.7, 400.0);
+    let rs = surface_resistance(gs, lai);
+    let et = penman_monteith_et(15.0, 1.0, 25.0, 1.5, 2.0, rs, 101.3);
+    assert!(et > 0.0, "canopy should transpire");
+
+    // Winter: no LAI, no ET
+    let winter_seasonal = seasonal_lai_multiplier(LeafHabit::Deciduous, 15, 45.0);
+    let winter_lai = effective_lai(lai_base, 7.0, winter_seasonal, 1.0, 0.0);
+    assert_eq!(winter_lai, 0.0, "deciduous winter = no LAI");
+}
+
+// --- CO2 integration test ---
+
+#[test]
+fn co2_enrichment_increases_growth() {
+    use vanaspati::{PhotosynthesisPathway, photosynthesis_rate_co2};
+
+    let ambient = photosynthesis_rate_co2(20.0, 0.05, 800.0, 400.0, PhotosynthesisPathway::C3);
+    let elevated = photosynthesis_rate_co2(20.0, 0.05, 800.0, 560.0, PhotosynthesisPathway::C3);
+    let doubled = photosynthesis_rate_co2(20.0, 0.05, 800.0, 800.0, PhotosynthesisPathway::C3);
+
+    assert!(
+        elevated > ambient,
+        "FACE-level CO2 should increase photosynthesis"
+    );
+    assert!(
+        doubled > elevated,
+        "more CO2 = more photosynthesis (diminishing returns)"
+    );
+
+    // C4 should respond less
+    let c4_ambient = photosynthesis_rate_co2(40.0, 0.06, 800.0, 400.0, PhotosynthesisPathway::C4);
+    let c4_doubled = photosynthesis_rate_co2(40.0, 0.06, 800.0, 800.0, PhotosynthesisPathway::C4);
+    let c3_gain = (doubled - ambient) / ambient;
+    let c4_gain = (c4_doubled - c4_ambient) / c4_ambient;
+    assert!(c3_gain > c4_gain, "C3 should respond more to CO2 than C4");
+}
+
+// --- PFT integration test ---
+
+#[test]
+fn pft_drives_full_simulation() {
+    use vanaspati::{
+        GrowthModel, PftParams, PftType, lai_from_biomass, maintenance_respiration,
+        photosynthesis_rate_co2, seasonal_lai_multiplier,
+    };
+
+    let pft = PftParams::from_type(PftType::TemperateBroadleafDeciduous);
+
+    // Create growth model from PFT params
+    let growth = GrowthModel {
+        max_height: pft.max_height,
+        growth_rate: pft.growth_rate,
+        initial_height: 0.1,
+    };
+
+    // Simulate summer day
+    let _lai = lai_from_biomass(50.0, pft.sla, 100.0);
+    let seasonal = seasonal_lai_multiplier(pft.leaf_habit, 200, 45.0);
+    assert!(seasonal > 0.9, "summer should be near full leaf");
+
+    let photo = photosynthesis_rate_co2(pft.pmax, pft.quantum_yield, 800.0, 400.0, pft.pathway);
+    assert!(photo > 0.0, "should photosynthesize");
+
+    let r_m = maintenance_respiration(100.0, pft.leaf_n, pft.temp_optimum);
+    assert!(r_m > 0.0, "should respire");
+
+    let daily = growth.daily_growth(5.0);
+    assert!(daily > 0.0, "should grow");
+}
