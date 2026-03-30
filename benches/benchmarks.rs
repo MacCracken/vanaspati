@@ -1,14 +1,16 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use vanaspati::{
-    AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhotosynthesisPathway,
-    PollinationMethod, RootSystem, Season, age_mortality_rate, allocate, canopy_to_habitat_score,
-    competition_growth, daily_decomposition_rate, daylight_hours_at, dispersal_distance,
-    dispersal_probability, drought_mortality, frost_mortality, frost_risk_to_mortality,
-    growing_conditions_to_growth_multiplier, growth_modifier_at, growth_stage, height_to_diameter,
-    height_to_leaf_area, net_primary_productivity, nitrogen_release, pathway_params,
-    photosynthesis_rate, pollination_probability, remaining_mass, self_thinning_mortality,
-    shannon_diversity, soil_temperature_to_root_activity, solar_to_par, temperature_factor,
-    temperature_factor_c4, temperature_factor_cam, wind_to_dispersal_speed,
+    AllocationStrategy, DispersalMethod, GrowthModel, LitterType, PhenologicalEvent,
+    PhotosynthesisPathway, PollinationMethod, RootSystem, Season, accumulated_gdd,
+    age_mortality_rate, allocate, canopy_to_habitat_score, competition_growth,
+    daily_decomposition_rate, daylight_hours_at, dispersal_distance, dispersal_probability,
+    drought_mortality, event_reached, frost_mortality, frost_risk_to_mortality,
+    growing_conditions_to_growth_multiplier, growing_degree_days, growth_modifier_at, growth_stage,
+    height_to_diameter, height_to_leaf_area, net_primary_productivity, nitrogen_release,
+    pathway_params, phenological_progress, photosynthesis_rate, pollination_probability,
+    remaining_mass, self_thinning_mortality, shannon_diversity, soil_temperature_to_root_activity,
+    solar_to_par, temperature_factor, temperature_factor_c4, temperature_factor_cam,
+    wind_to_dispersal_speed,
 };
 
 fn bench_growth(c: &mut Criterion) {
@@ -250,6 +252,24 @@ fn bench_decomposition(c: &mut Criterion) {
     });
 }
 
+fn bench_phenology(c: &mut Criterion) {
+    c.bench_function("growing_degree_days", |b| {
+        b.iter(|| growing_degree_days(black_box(20.0), black_box(5.0)))
+    });
+    let temps: Vec<f32> = (0..365)
+        .map(|d| 10.0 + 15.0 * (d as f32 * 0.0172).sin())
+        .collect();
+    c.bench_function("accumulated_gdd_365", |b| {
+        b.iter(|| accumulated_gdd(black_box(&temps), black_box(5.0)))
+    });
+    c.bench_function("event_reached", |b| {
+        b.iter(|| event_reached(black_box(400.0), black_box(PhenologicalEvent::LeafOut)))
+    });
+    c.bench_function("phenological_progress", |b| {
+        b.iter(|| phenological_progress(black_box(250.0), black_box(PhenologicalEvent::Flowering)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_growth,
@@ -263,5 +283,6 @@ criterion_group!(
     bench_ecosystem,
     bench_bridge,
     bench_decomposition,
+    bench_phenology,
 );
 criterion_main!(benches);

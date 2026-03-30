@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **phenology** — `PhenologicalEvent` enum (DormancyBreak, BudBreak, LeafOut, Flowering, FruitSet, LeafSenescence, DormancyOnset), `growing_degree_days` and `accumulated_gdd` heat sum accumulation, `gdd_threshold` with literature values for temperate deciduous trees, `event_reached` and `phenological_progress`, `chilling_contribution` and `accumulated_chill` (Utah model, 0–7.2°C), `dormancy_broken`, `senescence_triggered` (photoperiod + temperature), `dormancy_onset_triggered` (short days or frost)
+
+## [0.2.0]
+
+### Added
+- **integration/soorat** — feature-gated `soorat-compat` module with visualization data structures: `GrowthVisualization` (height, diameter, leaf area, maturity from `GrowthModel`), `RootVisualization` (depth, spread, uptake from `RootSystem`), `EcosystemMap` (species density grid), `SeasonalColor` (foliage RGB, growth modifier, daylight from day/latitude)
+
+### Updated
+- zerocopy 0.8.47 -> 0.8.48
+
+## [0.1.1]
+
+### Added
 - **bridge** — 13 cross-crate bridge functions: badal (weather→growth: solar_to_par, atmosphere_to_photosynthesis_inputs, rainfall_to_water_supply, frost_risk_to_mortality, frost_to_dormancy, wind_to_dispersal_speed, growing_conditions_to_growth_multiplier), ushma (thermo→physiology: soil_temperature_to_root_activity, soil_temperature_to_growth_factor, evapotranspiration_cooling, wet_bulb_to_heat_stress), jantu (plant→creature: canopy_to_habitat_score, seed_production_to_food)
 - **decomposition** — `LitterType` enum (Leaf, FineRoot, Wood, Reproductive), `base_decomposition_rate` with literature values, Q10 temperature factor (doubles per 10°C), moisture bell curve (optimum at field capacity), exponential decay (`remaining_mass`, `mass_decomposed`), `nitrogen_release` with C:N ratio, `half_life_days`
 - **dispersal** — `DispersalMethod` enum (Wind, Animal, Gravity, Water, Explosive), `SeedProfile` struct with presets (dandelion, maple, acorn, coconut), `dispersal_distance` with method-specific formulas, `dispersal_probability` with exponential decay kernel

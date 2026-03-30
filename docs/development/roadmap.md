@@ -81,7 +81,7 @@ Vanaspati does NOT own:
 - [ ] **Nutrient system (nitrogen)** — soil N pool, uptake, effect on growth rate. Nitrogen is the most commonly limiting nutrient
 - [x] **Seed dispersal** — wind, animal, gravity, water, explosive dispersal with exponential decay kernels (done: V0.2.0)
 - [x] **Mortality and disturbance** — age (Weibull), drought (quadratic deficit), frost (logistic), self-thinning (Yoda's -3/2) (done: V0.2.0). Remaining: fire, disease, windthrow
-- [ ] **Phenology (growing degree days)** — replace/augment rigid season boundaries with accumulated heat + photoperiod triggers + chilling requirements
+- [x] **Phenology (growing degree days)** — GDD accumulation, chilling hours (Utah model), event thresholds, dormancy break, senescence/dormancy triggers (photoperiod + temp) (done)
 
 ### Medium Priority
 

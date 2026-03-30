@@ -19,6 +19,7 @@
 //! | [`biomass`] | Carbon allocation across plant organs, allometric scaling |
 //! | [`mortality`] | Age, drought, frost, competition mortality models |
 //! | [`decomposition`] | Litter decay, temperature/moisture factors, nutrient release |
+//! | [`phenology`] | Growing degree days, chilling hours, lifecycle event triggers |
 //! | [`ecosystem`] | Lotka-Volterra competition, Shannon diversity, NPP |
 //! | [`bridge`] | Cross-crate conversions for badal, ushma, jantu |
 //! | [`error`] | Error types |
@@ -48,7 +49,10 @@ pub mod dispersal;
 pub mod ecosystem;
 pub mod error;
 pub mod growth;
+/// Integration APIs for downstream consumers (soorat rendering).
+pub mod integration;
 pub mod mortality;
+pub mod phenology;
 pub mod photosynthesis;
 pub mod pollination;
 pub mod root;
@@ -90,6 +94,13 @@ pub use biomass::{
 // Mortality
 pub use mortality::{
     MortalityCause, age_mortality_rate, drought_mortality, frost_mortality, self_thinning_mortality,
+};
+
+// Phenology
+pub use phenology::{
+    PhenologicalEvent, accumulated_chill, accumulated_gdd, chilling_contribution, dormancy_broken,
+    dormancy_onset_triggered, event_reached, gdd_threshold, growing_degree_days,
+    phenological_progress, senescence_triggered,
 };
 
 // Decomposition
